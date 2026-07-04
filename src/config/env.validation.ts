@@ -1,0 +1,28 @@
+import Joi from 'joi';
+
+export const validationSchema = Joi.object({
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+  PORT: Joi.number().default(3000),
+  DATABASE_URL: Joi.string().uri().required(),
+  REDIS_HOST: Joi.string().default('localhost'),
+  REDIS_PORT: Joi.number().default(6379),
+  JWT_ACCESS_SECRET: Joi.string().min(32).required(),
+  JWT_REFRESH_SECRET: Joi.string().min(32).required(),
+  JWT_ACCESS_EXPIRATION: Joi.string().default('15m'),
+  JWT_REFRESH_EXPIRATION: Joi.string().default('7d'),
+  CLOUDINARY_CLOUD_NAME: Joi.string().allow('').optional(),
+  CLOUDINARY_API_KEY: Joi.string().allow('').optional(),
+  CLOUDINARY_API_SECRET: Joi.string().allow('').optional(),
+  FIREBASE_PROJECT_ID: Joi.string().allow('').optional(),
+  FIREBASE_PRIVATE_KEY: Joi.string().allow('').optional(),
+  FIREBASE_CLIENT_EMAIL: Joi.string().allow('').optional(),
+  SMTP_HOST: Joi.string().default('smtp.gmail.com'),
+  SMTP_PORT: Joi.number().default(587),
+  SMTP_USER: Joi.string().allow('').optional(),
+  SMTP_PASS: Joi.string().allow('').optional(),
+  MAIL_FROM: Joi.string().email().default('noreply@kassahun.com'),
+  AFRICASTALKING_API_KEY: Joi.string().allow('').optional(),
+  AFRICASTALKING_USERNAME: Joi.string().allow('').optional(),
+  AFRICASTALKING_SENDER_ID: Joi.string().allow('').optional(),
+  SENTRY_DSN: Joi.string().uri().allow('').optional(),
+});
