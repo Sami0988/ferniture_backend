@@ -9,7 +9,7 @@ export const employeeSpecialtyEnum = pgEnum('employee_specialty', [
 ]);
 
 export const divisionEnum = pgEnum('division', [
-  'furniture', 'aluminum', 'interior_design',
+  'furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories',
 ]);
 
 export const projectStatusEnum = pgEnum('project_status', [
@@ -43,3 +43,5 @@ export const notificationTypeEnum = pgEnum('notification_type', [
 export const platformEnum = pgEnum('platform', ['ios', 'android', 'web']);
 
 export const contactStatusEnum = pgEnum('contact_status', ['new', 'read', 'replied']);
+
+export const customerTypeEnum = pgEnum('customer_type', ['personal', 'business', 'government', 'bank']);

@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Res } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Res, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -19,8 +20,18 @@ export class CustomersController {
   @Get()
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'List all customers' })
-  findAll(@Query() pagination: PaginationDto) {
-    return this.customersService.findAll(pagination);
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'type', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('type') type?: string,
+    @Query('search') search?: string,
+  ) {
+    const pagination = { page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20 };
+    return this.customersService.findAll(pagination, { type, search });
   }
 
   @Get('search')
@@ -50,16 +61,58 @@ export class CustomersController {
 
   @Post()
   @Roles('super_admin', 'manager')
+  @UseInterceptors(FileInterceptor('image'))
   @ApiOperation({ summary: 'Create customer' })
-  create(@Body() dto: CreateCustomerDto, @CurrentUser('id') userId: string) {
-    return this.customersService.create(dto, userId);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fullName: { type: 'string' },
+        phone: { type: 'string' },
+        email: { type: 'string' },
+        type: { type: 'string', enum: ['personal', 'business', 'government', 'bank'] },
+        address: { type: 'string' },
+        tinNumber: { type: 'string' },
+        notes: { type: 'string' },
+        image: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  create(
+    @Body() dto: CreateCustomerDto,
+    @CurrentUser('id') userId: string,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.customersService.create(dto, userId, file);
   }
 
   @Put(':id')
   @Roles('super_admin', 'manager')
+  @UseInterceptors(FileInterceptor('image'))
   @ApiOperation({ summary: 'Update customer' })
-  update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
-    return this.customersService.update(id, dto);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fullName: { type: 'string' },
+        phone: { type: 'string' },
+        email: { type: 'string' },
+        type: { type: 'string', enum: ['personal', 'business', 'government', 'bank'] },
+        address: { type: 'string' },
+        tinNumber: { type: 'string' },
+        notes: { type: 'string' },
+        image: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCustomerDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.customersService.update(id, dto, file);
   }
 
   @Delete(':id')

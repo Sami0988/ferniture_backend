@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { WebsiteRepository } from './website.repository';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
+import { UploadsService } from '../uploads/uploads.service';
 
 @Injectable()
 export class WebsiteService {
   constructor(
     private readonly repo: WebsiteRepository,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   // Products
@@ -22,19 +24,67 @@ export class WebsiteService {
     return products;
   }
 
+  async getProductsPaginated(pagination: PaginationDto, division?: string) {
+    return this.repo.findProductsPaginated(pagination, division);
+  }
+
+  async getAllProductsPaginated(pagination: PaginationDto, filters?: { division?: string; search?: string }) {
+    return this.repo.findAllProductsPaginated(pagination, filters);
+  }
+
   async getProductById(id: string) {
     const product = await this.repo.findProductById(id);
     if (!product) throw new NotFoundException('Product not found');
     return product;
   }
 
-  async createProduct(data: any) {
+  async createProduct(data: any, files?: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[]; images?: Express.Multer.File[] }) {
+    const existing = await this.repo.findProductByName(data.name);
+    if (existing) throw new ConflictException('A product with this name already exists');
+
+    if (files?.mainImage?.[0]) {
+      const result = await this.uploadsService.uploadImage(files.mainImage[0], 'kassahun/products/main');
+      data.mainImage = result.url;
+    }
+
+    if (files?.featureImages?.length) {
+      const uploadPromises = files.featureImages.map(file => this.uploadsService.uploadImage(file, 'kassahun/products/features'));
+      const results = await Promise.all(uploadPromises);
+      data.featureImages = results.map(r => r.url);
+    }
+
+    if (files?.images?.length) {
+      const uploadPromises = files.images.map(file => this.uploadsService.uploadImage(file, 'kassahun/products/images'));
+      const results = await Promise.all(uploadPromises);
+      data.mainImage = data.mainImage || results[0]?.url;
+      data.featureImages = [...(data.featureImages || []), ...results.map(r => r.url)].slice(0, 5);
+    }
+
     await this.cache.del('products:all');
     return this.repo.createProduct(data);
   }
 
-  async updateProduct(id: string, data: any) {
+  async updateProduct(id: string, data: any, files?: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[]; images?: Express.Multer.File[] }) {
     await this.getProductById(id);
+
+    if (files?.mainImage?.[0]) {
+      const result = await this.uploadsService.uploadImage(files.mainImage[0], 'kassahun/products/main');
+      data.mainImage = result.url;
+    }
+
+    if (files?.featureImages?.length) {
+      const uploadPromises = files.featureImages.map(file => this.uploadsService.uploadImage(file, 'kassahun/products/features'));
+      const results = await Promise.all(uploadPromises);
+      data.featureImages = results.map(r => r.url);
+    }
+
+    if (files?.images?.length) {
+      const uploadPromises = files.images.map(file => this.uploadsService.uploadImage(file, 'kassahun/products/images'));
+      const results = await Promise.all(uploadPromises);
+      data.mainImage = data.mainImage || results[0]?.url;
+      data.featureImages = [...(data.featureImages || []), ...results.map(r => r.url)].slice(0, 5);
+    }
+
     await this.cache.del('products:all');
     return this.repo.updateProduct(id, data);
   }
@@ -54,6 +104,10 @@ export class WebsiteService {
       await this.cache.set(cacheKey, images, 300);
     }
     return images;
+  }
+
+  async getGalleryPaginated(pagination: PaginationDto, division?: string) {
+    return this.repo.findGalleryPaginated(pagination, division);
   }
 
   async getFeaturedGallery() {
@@ -99,6 +153,10 @@ export class WebsiteService {
       await this.cache.set(cacheKey, testimonials, 300);
     }
     return testimonials;
+  }
+
+  async getTestimonialsPaginated(pagination: PaginationDto, approvedOnly: boolean = false) {
+    return this.repo.findTestimonialsPaginated(pagination, approvedOnly);
   }
 
   async getFeaturedTestimonials() {
@@ -173,6 +231,10 @@ export class WebsiteService {
 
   async getAllFaqs() {
     return this.repo.findAllFaqs();
+  }
+
+  async getAllFaqsPaginated(pagination: PaginationDto) {
+    return this.repo.findAllFaqsPaginated(pagination);
   }
 
   async createFaq(data: any) {

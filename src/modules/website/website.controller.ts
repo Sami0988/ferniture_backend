@@ -1,8 +1,10 @@
 import {
   Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, Query, UseGuards,
+  Body, Param, Query, UseGuards, UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -27,8 +29,8 @@ export class PublicProductsController {
   @Get()
   @ApiOperation({ summary: 'List public products' })
   @ApiQuery({ name: 'division', required: false })
-  findAll(@Query('division') division?: string) {
-    return this.websiteService.getPublicProducts(division);
+  findAll(@Query('division') division?: string, @Query() pagination: PaginationDto = new PaginationDto()) {
+    return this.websiteService.getProductsPaginated(pagination, division);
   }
 
   @Get(':id')
@@ -46,8 +48,8 @@ export class PublicGalleryController {
   @Get()
   @ApiOperation({ summary: 'List gallery images' })
   @ApiQuery({ name: 'division', required: false })
-  findAll(@Query('division') division?: string) {
-    return this.websiteService.getPublicGallery(division);
+  findAll(@Query('division') division?: string, @Query() pagination: PaginationDto = new PaginationDto()) {
+    return this.websiteService.getGalleryPaginated(pagination, division);
   }
 
   @Get('featured')
@@ -64,8 +66,8 @@ export class PublicTestimonialsController {
 
   @Get()
   @ApiOperation({ summary: 'List approved testimonials' })
-  findAll() {
-    return this.websiteService.getPublicTestimonials();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.websiteService.getTestimonialsPaginated(pagination, true);
   }
 
   @Get('featured')
@@ -112,7 +114,7 @@ export class PublicFaqsController {
 
   @Get()
   @ApiOperation({ summary: 'List FAQs' })
-  findAll() {
+  findAll(@Query() pagination: PaginationDto) {
     return this.websiteService.getPublicFaqs();
   }
 }
@@ -129,22 +131,90 @@ export class AdminProductsController {
   @Get()
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'List all products (admin)' })
-  findAll(@Query() pagination: PaginationDto) {
-    return this.websiteService.getPublicProducts();
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'division', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('division') division?: string,
+    @Query('search') search?: string,
+  ) {
+    const pagination = { page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20 };
+    return this.websiteService.getAllProductsPaginated(pagination, { division, search });
+  }
+
+  @Get(':id')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Get product by ID (admin)' })
+  findOne(@Param('id') id: string) {
+    return this.websiteService.getProductById(id);
   }
 
   @Post()
   @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'mainImage', maxCount: 1 },
+    { name: 'featureImages', maxCount: 5 },
+    { name: 'images', maxCount: 10 },
+  ]))
   @ApiOperation({ summary: 'Create a product' })
-  create(@Body() dto: CreateProductDto) {
-    return this.websiteService.createProduct(dto);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        division: { type: 'string', enum: ['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] },
+        category: { type: 'string' },
+        description: { type: 'string' },
+        materialId: { type: 'string' },
+        price: { type: 'number' },
+        mainImage: { type: 'string', format: 'binary' },
+        featureImages: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 5 },
+        images: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 10 },
+      },
+    },
+  })
+  create(
+    @Body() dto: CreateProductDto,
+    @UploadedFiles() files?: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[]; images?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.createProduct(dto, files);
   }
 
   @Patch(':id')
   @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'mainImage', maxCount: 1 },
+    { name: 'featureImages', maxCount: 5 },
+    { name: 'images', maxCount: 10 },
+  ]))
   @ApiOperation({ summary: 'Update a product' })
-  update(@Param('id') id: string, @Body() dto: Partial<CreateProductDto>) {
-    return this.websiteService.updateProduct(id, dto);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        division: { type: 'string', enum: ['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] },
+        category: { type: 'string' },
+        description: { type: 'string' },
+        materialId: { type: 'string' },
+        price: { type: 'number' },
+        mainImage: { type: 'string', format: 'binary' },
+        featureImages: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 5 },
+        images: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 10 },
+      },
+    },
+  })
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateProductDto>,
+    @UploadedFiles() files?: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[]; images?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.updateProduct(id, dto, files);
   }
 
   @Delete(':id')
@@ -202,7 +272,7 @@ export class AdminTestimonialsController {
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'List all testimonials (admin)' })
   findAll(@Query() pagination: PaginationDto) {
-    return this.websiteService.getPublicTestimonials();
+    return this.websiteService.getTestimonialsPaginated(pagination);
   }
 
   @Patch(':id/approve')
@@ -281,8 +351,8 @@ export class AdminFaqsController {
   @Get()
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'List all FAQs (admin)' })
-  findAll() {
-    return this.websiteService.getAllFaqs();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.websiteService.getAllFaqsPaginated(pagination);
   }
 
   @Post()

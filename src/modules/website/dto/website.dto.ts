@@ -39,9 +39,9 @@ export class CreateQuoteRequestDto {
   @IsNotEmpty()
   phone: string;
 
-  @ApiPropertyOptional({ enum: ['furniture', 'aluminum', 'interior_design'] })
+  @ApiPropertyOptional({ enum: ['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] })
   @IsOptional()
-  @IsEnum(['furniture', 'aluminum', 'interior_design'] as const)
+  @IsEnum(['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] as const)
   division?: string;
 
   @ApiProperty({ example: 'I need 3 custom wardrobes for my bedroom' })
@@ -87,8 +87,8 @@ export class CreateProductDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({ enum: ['furniture', 'aluminum', 'interior_design'] })
-  @IsEnum(['furniture', 'aluminum', 'interior_design'] as const)
+  @ApiProperty({ enum: ['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] })
+  @IsEnum(['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] as const)
   division: string;
 
   @ApiPropertyOptional({ example: 'Tables' })
@@ -108,17 +108,27 @@ export class CreateProductDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  priceRangeMin?: number;
+  price?: any;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  priceRangeMax?: number;
+  mainImage?: any;
 
   @ApiPropertyOptional()
   @IsOptional()
-  imageUrls?: string[];
+  featureImages?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  images?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  isFeatured?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  isActive?: any;
 }
 
 export class CreateGalleryImageDto {
@@ -127,8 +137,8 @@ export class CreateGalleryImageDto {
   @IsString()
   title?: string;
 
-  @ApiProperty({ enum: ['furniture', 'aluminum', 'interior_design'] })
-  @IsEnum(['furniture', 'aluminum', 'interior_design'] as const)
+  @ApiProperty({ enum: ['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] })
+  @IsEnum(['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] as const)
   division: string;
 
   @ApiProperty()

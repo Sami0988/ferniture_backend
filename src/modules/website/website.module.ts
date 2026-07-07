@@ -16,9 +16,10 @@ import {
 } from './website.controller';
 import { WebsiteService } from './website.service';
 import { WebsiteRepository } from './website.repository';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
-  imports: [CacheModule.register()],
+  imports: [CacheModule.register(), UploadsModule],
   controllers: [
     PublicProductsController,
     PublicGalleryController,

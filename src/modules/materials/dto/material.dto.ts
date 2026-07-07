@@ -18,8 +18,7 @@ export class CreateMaterialDto {
 
   @ApiPropertyOptional({ example: 15000 })
   @IsOptional()
-  @IsNumber()
-  unitCost?: number;
+  unitCost?: any;
 
   @ApiPropertyOptional({ example: 'board_ft' })
   @IsOptional()
@@ -38,13 +37,19 @@ export class CreateMaterialDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsBoolean()
-  isPublicVisible?: boolean;
+  isPublicVisible?: any;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
+  isActive?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  swatchImage?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  images?: any;
 }
 
 export class UpdateMaterialDto {
@@ -60,8 +65,7 @@ export class UpdateMaterialDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
-  unitCost?: number;
+  unitCost?: any;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -80,13 +84,19 @@ export class UpdateMaterialDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsBoolean()
-  isPublicVisible?: boolean;
+  isPublicVisible?: any;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
+  isActive?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  swatchImage?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  images?: any;
 }
 
 export class AddProjectMaterialDto {

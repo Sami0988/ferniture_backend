@@ -33,9 +33,10 @@ export const products = pgTable('products', {
   category: varchar('category', { length: 100 }),
   description: text('description'),
   materialId: uuid('material_id').references(() => materials.id),
-  priceRangeMin: numeric('price_range_min', { precision: 12, scale: 2 }),
-  priceRangeMax: numeric('price_range_max', { precision: 12, scale: 2 }),
-  imageUrls: jsonb('image_urls').$type<string[]>().default([]),
+  price: numeric('price', { precision: 12, scale: 2 }),
+  mainImage: text('main_image'),
+  featureImages: jsonb('feature_images').$type<string[]>().default([]),
+  isFeatured: boolean('is_featured').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

@@ -82,6 +82,10 @@ export class ProjectsRepository {
         customerId: projects.customerId,
         customerName: customers.fullName,
         customerPhone: customers.phone,
+        customerEmail: customers.email,
+        customerType: customers.type,
+        customerAddress: customers.address,
+        customerTinNumber: customers.tinNumber,
         leadEmployeeId: projects.leadEmployeeId,
         createdBy: projects.createdBy,
         createdAt: projects.createdAt,
@@ -103,7 +107,21 @@ export class ProjectsRepository {
       .innerJoin(users, eq(projectAssignees.employeeId, users.id))
       .where(eq(projectAssignees.projectId, id));
 
-    return { ...project, assignees };
+    const { customerId, customerName, customerPhone, customerEmail, customerType, customerAddress, customerTinNumber, ...rest } = project;
+
+    return {
+      ...rest,
+      customer: {
+        id: customerId,
+        fullName: customerName,
+        phone: customerPhone,
+        email: customerEmail,
+        type: customerType,
+        address: customerAddress,
+        tinNumber: customerTinNumber,
+      },
+      assignees,
+    };
   }
 
   async create(data: any, assigneeIds: string[]) {
@@ -176,6 +194,30 @@ export class ProjectsRepository {
       .from(projectAssignees)
       .innerJoin(users, eq(projectAssignees.employeeId, users.id))
       .where(eq(projectAssignees.projectId, projectId));
+  }
+
+  async addAssignee(projectId: string, employeeId: string) {
+    const [existing] = await this.db
+      .select()
+      .from(projectAssignees)
+      .where(and(eq(projectAssignees.projectId, projectId), eq(projectAssignees.employeeId, employeeId)));
+
+    if (existing) return existing;
+
+    const [assignee] = await this.db
+      .insert(projectAssignees)
+      .values({ projectId, employeeId })
+      .returning();
+
+    return assignee;
+  }
+
+  async removeAssignee(projectId: string, employeeId: string) {
+    await this.db
+      .delete(projectAssignees)
+      .where(and(eq(projectAssignees.projectId, projectId), eq(projectAssignees.employeeId, employeeId)));
+
+    return { projectId, employeeId, removed: true };
   }
 
   async getStatusHistory(projectId: string) {

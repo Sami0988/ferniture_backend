@@ -62,6 +62,26 @@ export class ProjectsController {
     return this.projectsService.getAssignees(id);
   }
 
+  @Post(':id/assignees/:employeeId')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Assign employee to project' })
+  addAssignee(
+    @Param('id') id: string,
+    @Param('employeeId') employeeId: string,
+  ) {
+    return this.projectsService.addAssignee(id, employeeId);
+  }
+
+  @Delete(':id/assignees/:employeeId')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Remove employee from project' })
+  removeAssignee(
+    @Param('id') id: string,
+    @Param('employeeId') employeeId: string,
+  ) {
+    return this.projectsService.removeAssignee(id, employeeId);
+  }
+
   @Post()
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Create a new project' })

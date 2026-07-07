@@ -2,10 +2,15 @@ import { IsString, IsNotEmpty, IsOptional, MinLength, IsEnum, Matches } from 'cl
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
-  @ApiProperty({ example: '+251911234567' })
+  @ApiPropertyOptional({ example: '+251911234567' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  phone: string;
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'user@example.com' })
+  @IsOptional()
+  @IsString()
+  email?: string;
 
   @ApiProperty({ example: 'password123' })
   @IsString()

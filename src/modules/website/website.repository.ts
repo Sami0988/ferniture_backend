@@ -1,6 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, ilike } from 'drizzle-orm';
 import {
   products, galleryImages, testimonials,
   contactMessages, quoteRequests, faqs,
@@ -18,8 +18,61 @@ export class WebsiteRepository {
     return this.db.select().from(products).where(and(...conditions)).orderBy(desc(products.createdAt));
   }
 
+  async findProductsPaginated(pagination: PaginationDto, division?: string): Promise<PaginatedResult<any>> {
+    const { page = 1, limit = 20 } = pagination;
+    const offset = (page - 1) * limit;
+    const conditions = [eq(products.isActive, true)];
+    if (division) conditions.push(eq(products.division, division as any));
+    const where = and(...conditions);
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(products)
+      .where(where as any);
+
+    const data = await this.db
+      .select()
+      .from(products)
+      .where(where as any)
+      .orderBy(desc(products.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
+  }
+
+  async findAllProductsPaginated(pagination: PaginationDto, filters?: { division?: string; search?: string }): Promise<PaginatedResult<any>> {
+    const { page = 1, limit = 20 } = pagination;
+    const offset = (page - 1) * limit;
+
+    const conditions: any[] = [];
+    if (filters?.division) conditions.push(eq(products.division, filters.division as any));
+    if (filters?.search) conditions.push(ilike(products.name, `%${filters.search}%`));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(products)
+      .where(where as any);
+
+    const data = await this.db
+      .select()
+      .from(products)
+      .where(where as any)
+      .orderBy(desc(products.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
+  }
+
   async findProductById(id: string) {
     const [product] = await this.db.select().from(products).where(eq(products.id, id));
+    return product || null;
+  }
+
+  async findProductByName(name: string) {
+    const [product] = await this.db.select().from(products).where(eq(products.name, name));
     return product || null;
   }
 
@@ -44,6 +97,29 @@ export class WebsiteRepository {
     if (division) conditions.push(eq(galleryImages.division, division as any));
     const where = conditions.length > 0 ? and(...conditions) : undefined;
     return this.db.select().from(galleryImages).where(where as any).orderBy(desc(galleryImages.createdAt));
+  }
+
+  async findGalleryPaginated(pagination: PaginationDto, division?: string): Promise<PaginatedResult<any>> {
+    const { page = 1, limit = 20 } = pagination;
+    const offset = (page - 1) * limit;
+    const conditions: any[] = [];
+    if (division) conditions.push(eq(galleryImages.division, division as any));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(galleryImages)
+      .where(where as any);
+
+    const data = await this.db
+      .select()
+      .from(galleryImages)
+      .where(where as any)
+      .orderBy(desc(galleryImages.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
   }
 
   async findFeaturedGallery(): Promise<any[]> {
@@ -88,6 +164,28 @@ export class WebsiteRepository {
       .from(testimonials)
       .where(eq(testimonials.isApproved, true))
       .orderBy(desc(testimonials.createdAt));
+  }
+
+  async findTestimonialsPaginated(pagination: PaginationDto, approvedOnly: boolean = false): Promise<PaginatedResult<any>> {
+    const { page = 1, limit = 20 } = pagination;
+    const offset = (page - 1) * limit;
+    const conditions = approvedOnly ? [eq(testimonials.isApproved, true)] : [];
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(testimonials)
+      .where(where as any);
+
+    const data = await this.db
+      .select()
+      .from(testimonials)
+      .where(where as any)
+      .orderBy(desc(testimonials.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
   }
 
   async findFeaturedTestimonials(): Promise<any[]> {
@@ -204,6 +302,24 @@ export class WebsiteRepository {
       .from(faqs)
       .where(eq(faqs.isActive, true))
       .orderBy(faqs.sortOrder);
+  }
+
+  async findAllFaqsPaginated(pagination: PaginationDto): Promise<PaginatedResult<any>> {
+    const { page = 1, limit = 20 } = pagination;
+    const offset = (page - 1) * limit;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(faqs);
+
+    const data = await this.db
+      .select()
+      .from(faqs)
+      .orderBy(faqs.sortOrder)
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
   }
 
   async findAllFaqs(): Promise<any[]> {

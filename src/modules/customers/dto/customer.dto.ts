@@ -17,6 +17,11 @@ export class CreateCustomerDto {
   @IsEmail()
   email?: string;
 
+  @ApiPropertyOptional({ enum: ['personal', 'business', 'government', 'bank'] })
+  @IsOptional()
+  @IsString()
+  type?: string;
+
   @ApiPropertyOptional({ example: 'Bole, Addis Ababa' })
   @IsOptional()
   @IsString()
@@ -31,6 +36,10 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  imageUrl?: any;
 }
 
 export class UpdateCustomerDto {
@@ -49,6 +58,11 @@ export class UpdateCustomerDto {
   @IsEmail()
   email?: string;
 
+  @ApiPropertyOptional({ enum: ['personal', 'business', 'government', 'bank'] })
+  @IsOptional()
+  @IsString()
+  type?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -63,4 +77,8 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  imageUrl?: any;
 }

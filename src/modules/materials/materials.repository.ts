@@ -1,6 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
-import { eq, desc, sql, and } from 'drizzle-orm';
+import { eq, desc, sql, and, ilike } from 'drizzle-orm';
 import { materials, projectMaterials } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
@@ -8,13 +8,14 @@ import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto'
 export class MaterialsRepository {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
 
-  async findAll(pagination: PaginationDto, filters?: { category?: string; isActive?: string }): Promise<PaginatedResult<any>> {
+  async findAll(pagination: PaginationDto, filters?: { category?: string; isActive?: string; search?: string }): Promise<PaginatedResult<any>> {
     const { page = 1, limit = 20 } = pagination;
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
     if (filters?.category) conditions.push(eq(materials.category, filters.category as any));
     if (filters?.isActive !== undefined) conditions.push(eq(materials.isActive, filters.isActive === 'true'));
+    if (filters?.search) conditions.push(ilike(materials.name, `%${filters.search}%`));
 
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -74,7 +75,39 @@ export class MaterialsRepository {
     return record;
   }
 
-  async getProjectMaterials(projectId: string) {
+  async getProjectMaterials(projectId: string, pagination?: PaginationDto) {
+    if (pagination) {
+      const { page = 1, limit = 20 } = pagination;
+      const offset = (page - 1) * limit;
+
+      const [countResult] = await this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(projectMaterials)
+        .where(eq(projectMaterials.projectId, projectId));
+
+      const data = await this.db
+        .select({
+          id: projectMaterials.id,
+          quantity: projectMaterials.quantity,
+          clientApproved: projectMaterials.clientApproved,
+          approvedAt: projectMaterials.approvedAt,
+          samplePhotoUrl: projectMaterials.samplePhotoUrl,
+          notes: projectMaterials.notes,
+          materialId: materials.id,
+          materialName: materials.name,
+          materialCategory: materials.category,
+          unitCost: materials.unitCost,
+          unit: materials.unit,
+        })
+        .from(projectMaterials)
+        .innerJoin(materials, eq(projectMaterials.materialId, materials.id))
+        .where(eq(projectMaterials.projectId, projectId))
+        .limit(limit)
+        .offset(offset);
+
+      return new PaginatedResult(data, countResult.count, page, limit);
+    }
+
     return this.db
       .select({
         id: projectMaterials.id,

@@ -6,8 +6,8 @@ import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto'
 export class EmployeesService {
   constructor(private readonly repo: EmployeesRepository) {}
 
-  async findAll(pagination: PaginationDto): Promise<PaginatedResult<any>> {
-    return this.repo.findAll(pagination);
+  async findAll(pagination: PaginationDto, filters?: { specialty?: string; search?: string }): Promise<PaginatedResult<any>> {
+    return this.repo.findAll(pagination, filters);
   }
 
   async findById(id: string) {
@@ -17,6 +17,7 @@ export class EmployeesService {
   }
 
   async create(data: any) {
+    if (data.name && !data.fullName) data.fullName = data.name;
     return this.repo.create(data);
   }
 

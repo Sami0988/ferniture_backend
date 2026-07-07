@@ -5,7 +5,7 @@ export class CreateEmployeeDto {
   @ApiProperty({ example: 'Abebe Kebede' })
   @IsString()
   @IsNotEmpty()
-  fullName: string;
+  name: string;
 
   @ApiProperty({ example: '+251911234567' })
   @IsString()
@@ -17,25 +17,20 @@ export class CreateEmployeeDto {
   @IsString()
   email?: string;
 
-  @ApiProperty({ example: 'password123' })
-  @IsString()
-  @IsNotEmpty()
-  password: string;
-
   @ApiProperty({ example: 'carpenter' })
   @IsString()
   @IsNotEmpty()
   specialty: string;
 
+  @ApiPropertyOptional({ example: 'furniture' })
+  @IsOptional()
+  @IsString()
+  division?: string;
+
   @ApiPropertyOptional({ example: '2026-01-15' })
   @IsOptional()
   @IsDateString()
   hireDate?: string;
-
-  @ApiPropertyOptional({ example: 'ID-001' })
-  @IsOptional()
-  @IsString()
-  idNumber?: string;
 }
 
 export class UpdateEmployeeDto {

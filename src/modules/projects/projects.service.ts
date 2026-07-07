@@ -59,6 +59,16 @@ export class ProjectsService {
     return this.repo.getAssignees(id);
   }
 
+  async addAssignee(projectId: string, employeeId: string) {
+    await this.findById(projectId);
+    return this.repo.addAssignee(projectId, employeeId);
+  }
+
+  async removeAssignee(projectId: string, employeeId: string) {
+    await this.findById(projectId);
+    return this.repo.removeAssignee(projectId, employeeId);
+  }
+
   async getStatusHistory(id: string) {
     await this.findById(id);
     return this.repo.getStatusHistory(id);

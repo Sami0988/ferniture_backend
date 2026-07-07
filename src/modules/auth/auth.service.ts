@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException, Inject, BadReques
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
-import { eq, and, gt, isNull } from 'drizzle-orm';
+import { eq, and, gt, isNull, or } from 'drizzle-orm';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { users, refreshTokens, passwordResetOtps } from '../../database/schema';
@@ -20,10 +20,18 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto): Promise<AuthTokensResponse> {
+    if (!dto.phone && !dto.email) {
+      throw new BadRequestException('Phone or email is required');
+    }
+
+    const conditions: any[] = [];
+    if (dto.phone) conditions.push(eq(users.phone, dto.phone));
+    if (dto.email) conditions.push(eq(users.email, dto.email));
+
     const [user] = await this.db
       .select()
       .from(users)
-      .where(eq(users.phone, dto.phone));
+      .where(conditions.length > 1 ? or(...conditions) : conditions[0]);
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');

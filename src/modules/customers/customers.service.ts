@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CustomersRepository } from './customers.repository';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
+import { UploadsService } from '../uploads/uploads.service';
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly repo: CustomersRepository) {}
+  constructor(
+    private readonly repo: CustomersRepository,
+    private readonly uploadsService: UploadsService,
+  ) {}
 
-  async findAll(pagination: PaginationDto): Promise<PaginatedResult<any>> {
-    return this.repo.findAll(pagination);
+  async findAll(pagination: PaginationDto, filters?: { type?: string; search?: string }): Promise<PaginatedResult<any>> {
+    return this.repo.findAll(pagination, filters);
   }
 
   async findById(id: string) {
@@ -16,12 +20,20 @@ export class CustomersService {
     return customer;
   }
 
-  async create(data: any, createdBy?: string) {
+  async create(data: any, createdBy?: string, file?: Express.Multer.File) {
+    if (file) {
+      const result = await this.uploadsService.uploadImage(file, 'kassahun/customers');
+      data.imageUrl = result.url;
+    }
     return this.repo.create(data, createdBy);
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: any, file?: Express.Multer.File) {
     await this.findById(id);
+    if (file) {
+      const result = await this.uploadsService.uploadImage(file, 'kassahun/customers');
+      data.imageUrl = result.url;
+    }
     return this.repo.update(id, data);
   }
 
@@ -34,15 +46,21 @@ export class CustomersService {
     return this.repo.search(term);
   }
 
+  async getStats(id: string) {
+    await this.findById(id);
+    return this.repo.getStats(id);
+  }
+
   async exportAll() {
     const customers = await this.repo.findAllForExport();
     // Convert to CSV
-    const headers = ['ID', 'Full Name', 'Phone', 'Email', 'Address', 'TIN Number', 'Notes', 'Created At'];
+    const headers = ['ID', 'Full Name', 'Phone', 'Email', 'Type', 'Address', 'TIN Number', 'Notes', 'Created At'];
     const rows = customers.map((c: any) => [
       c.id,
       c.fullName,
       c.phone,
       c.email || '',
+      c.type || 'personal',
       c.address || '',
       c.tinNumber || '',
       c.notes || '',

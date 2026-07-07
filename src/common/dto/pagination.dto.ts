@@ -25,6 +25,8 @@ export class PaginatedResult<T> {
   page: number;
   limit: number;
   totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 
   constructor(data: T[], total: number, page: number, limit: number) {
     this.data = data;
@@ -32,5 +34,7 @@ export class PaginatedResult<T> {
     this.page = page;
     this.limit = limit;
     this.totalPages = Math.ceil(total / limit);
+    this.hasNext = page < this.totalPages;
+    this.hasPrevious = page > 1;
   }
 }

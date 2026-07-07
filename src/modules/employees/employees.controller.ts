@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -17,8 +17,18 @@ export class EmployeesController {
   @Get()
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'List all employees' })
-  findAll(@Query() pagination: PaginationDto) {
-    return this.employeesService.findAll(pagination);
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'specialty', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('specialty') specialty?: string,
+    @Query('search') search?: string,
+  ) {
+    const pagination = { page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20 };
+    return this.employeesService.findAll(pagination, { specialty, search });
   }
 
   @Get(':id')

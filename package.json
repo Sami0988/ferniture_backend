@@ -22,6 +22,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:seed": "ts-node src/database/seed/seed.ts",
+    "db:seed:super-admin": "ts-node src/database/seed/seed-super-admin.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

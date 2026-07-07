@@ -9,14 +9,25 @@ import * as bcrypt from 'bcrypt';
 export class EmployeesRepository {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
 
-  async findAll(pagination: PaginationDto): Promise<PaginatedResult<any>> {
+  async findAll(pagination: PaginationDto, filters?: { specialty?: string; search?: string }): Promise<PaginatedResult<any>> {
     const { page = 1, limit = 20 } = pagination;
     const offset = (page - 1) * limit;
+
+    const conditions: any[] = [];
+    if (filters?.specialty) conditions.push(eq(employeeProfiles.specialty, filters.specialty as any));
+    if (filters?.search) {
+      const search = `%${filters.search}%`;
+      conditions.push(
+        sql`(${users.fullName} ILIKE ${search} OR ${users.phone} ILIKE ${search} OR ${users.email} ILIKE ${search})`
+      );
+    }
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [countResult] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(users)
-      .innerJoin(employeeProfiles, eq(users.id, employeeProfiles.userId));
+      .innerJoin(employeeProfiles, eq(users.id, employeeProfiles.userId))
+      .where(where as any);
 
     const data = await this.db
       .select({
@@ -33,6 +44,7 @@ export class EmployeesRepository {
       })
       .from(users)
       .innerJoin(employeeProfiles, eq(users.id, employeeProfiles.userId))
+      .where(where as any)
       .orderBy(desc(users.createdAt))
       .limit(limit)
       .offset(offset);
@@ -65,12 +77,11 @@ export class EmployeesRepository {
     fullName: string;
     phone: string;
     email?: string;
-    password: string;
     specialty: string;
     hireDate?: string;
-    idNumber?: string;
   }) {
-    const passwordHash = await bcrypt.hash(data.password, 12);
+    const password = Math.random().toString(36).slice(-8);
+    const passwordHash = await bcrypt.hash(password, 12);
 
     return this.db.transaction(async (tx: any) => {
       const [user] = await tx
@@ -90,12 +101,11 @@ export class EmployeesRepository {
           userId: user.id,
           specialty: data.specialty as any,
           hireDate: data.hireDate,
-          idNumber: data.idNumber,
         })
         .returning();
 
       const { passwordHash: _, ...userWithoutPassword } = user;
-      return { ...userWithoutPassword, ...profile };
+      return { ...userWithoutPassword, ...profile, generatedPassword: password };
     });
   }
 
