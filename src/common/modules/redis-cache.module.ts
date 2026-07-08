@@ -9,12 +9,23 @@ import { redisStore } from 'cache-manager-redis-store';
     CacheModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('app.redis.url');
+        
+        let storeOptions: any;
+        if (redisUrl) {
+          storeOptions = { url: redisUrl };
+        } else {
+          storeOptions = {
+            socket: {
+              host: configService.get('app.redis.host', 'localhost'),
+              port: configService.get('app.redis.port', 6379),
+            },
+          };
+        }
+
         const store = await redisStore({
-          socket: {
-            host: configService.get('app.redis.host', 'localhost'),
-            port: configService.get('app.redis.port', 6379),
-          },
-          ttl: 60 * 5, // 5 minutes default TTL
+          ...storeOptions,
+          ttl: 60 * 5,
         });
 
         return {

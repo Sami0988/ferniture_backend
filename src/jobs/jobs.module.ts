@@ -14,12 +14,20 @@ import { NotificationsModule } from '../modules/notifications/notifications.modu
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        connection: {
-          host: configService.get<string>('app.redis.host'),
-          port: configService.get<number>('app.redis.port'),
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const redisUrl = configService.get<string>('app.redis.url');
+        
+        if (redisUrl) {
+          return { connection: { url: redisUrl } };
+        }
+        
+        return {
+          connection: {
+            host: configService.get<string>('app.redis.host'),
+            port: configService.get<number>('app.redis.port'),
+          },
+        };
+      },
     }),
     BullModule.registerQueue({ name: 'email' }),
     MailModule,
