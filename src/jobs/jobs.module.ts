@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Logger } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -7,6 +7,8 @@ import { OverdueCheckProcessor } from './overdue-check.processor';
 import { DailyDigestProcessor } from './daily-digest.processor';
 import { MailModule } from '../mail/mail.module';
 import { NotificationsModule } from '../modules/notifications/notifications.module';
+
+const logger = new Logger('JobsModule');
 
 @Module({
   imports: [
@@ -18,7 +20,16 @@ import { NotificationsModule } from '../modules/notifications/notifications.modu
         const redisUrl = configService.get<string>('app.redis.url');
         
         if (redisUrl) {
-          return { connection: { url: redisUrl, enableOfflineQueue: true } };
+          return { 
+            connection: { 
+              url: redisUrl,
+              enableOfflineQueue: true,
+            },
+            defaultJobOptions: {
+              removeOnComplete: 100,
+              removeOnFail: 50,
+            },
+          };
         }
         
         return {
