@@ -18,7 +18,7 @@ import { NotificationsModule } from '../modules/notifications/notifications.modu
         const redisUrl = configService.get<string>('app.redis.url');
         
         if (redisUrl) {
-          return { connection: { url: redisUrl } };
+          return { connection: { url: redisUrl, enableOfflineQueue: true } };
         }
         
         return {

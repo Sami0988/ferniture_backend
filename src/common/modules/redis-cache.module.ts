@@ -13,7 +13,20 @@ import { redisStore } from 'cache-manager-redis-store';
         
         let storeOptions: any;
         if (redisUrl) {
-          storeOptions = { url: redisUrl };
+          const url = new URL(redisUrl);
+          const isTls = url.protocol === 'rediss:';
+          storeOptions = {
+            socket: {
+              host: url.hostname,
+              port: parseInt(url.port || '6379', 10),
+              tls: isTls ? {} : undefined,
+              reconnectStrategy: (retries: number) => {
+                if (retries > 10) return new Error('Redis max retries');
+                return Math.min(retries * 100, 3000);
+              },
+            },
+            password: url.password ? decodeURIComponent(url.password) : undefined,
+          };
         } else {
           storeOptions = {
             socket: {
