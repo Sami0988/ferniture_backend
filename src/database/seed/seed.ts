@@ -10,6 +10,7 @@ import {
   projectAssignees,
   projectAttachments,
   projectStatusHistory,
+  projectPayments,
   materials,
   projectMaterials,
   invoices,
@@ -237,6 +238,8 @@ async function seed() {
       description: '6-seater mahogany dining table with matching chairs',
       status: 'in_progress',
       priority: 'normal',
+      totalPrice: 120000,
+      paidNowPrice: 30000,
       orderDate: '2026-01-15',
       deliveryDate: '2026-02-28',
       leadEmployeeId: employee1.id,
@@ -254,6 +257,8 @@ async function seed() {
       description: '10 aluminum window frames for office renovation',
       status: 'new',
       priority: 'urgent',
+      totalPrice: 95000,
+      paidNowPrice: 0,
       orderDate: '2026-02-01',
       deliveryDate: '2026-03-15',
       leadEmployeeId: employee2.id,
@@ -271,6 +276,8 @@ async function seed() {
       description: 'Complete living room redesign with custom furniture',
       status: 'completed',
       priority: 'vip',
+      totalPrice: 185000,
+      paidNowPrice: 185000,
       orderDate: '2025-12-01',
       deliveryDate: '2026-01-31',
       completedAt: new Date('2026-01-28'),
@@ -289,6 +296,8 @@ async function seed() {
       description: 'Custom teak wardrobe with mirror panels',
       status: 'in_progress',
       priority: 'urgent',
+      totalPrice: 185000,
+      paidNowPrice: 50000,
       orderDate: '2026-03-10',
       deliveryDate: '2026-04-15',
       leadEmployeeId: employee1.id,
@@ -336,6 +345,14 @@ async function seed() {
     { projectId: project4.id, materialId: matTeak.id, quantity: '30', clientApproved: true },
     { projectId: project4.id, materialId: matGlass.id, quantity: '4', clientApproved: true },
     { projectId: project4.id, materialId: matHandle.id, quantity: '8', clientApproved: true },
+  ]);
+
+  // --- Project Payments ---
+  await db.insert(projectPayments).values([
+    { projectId: project1.id, amount: 30000, method: 'bank_transfer', note: 'Upfront deposit', recordedBy: superAdmin.id },
+    { projectId: project3.id, amount: 185000, method: 'bank_transfer', note: 'Full payment', recordedBy: superAdmin.id },
+    { projectId: project4.id, amount: 50000, method: 'telebirr', note: 'Down payment', recordedBy: manager.id },
+    { projectId: project4.id, amount: 20000, method: 'cash', note: 'Second installment', recordedBy: manager.id },
   ]);
 
   // --- Invoices ---
