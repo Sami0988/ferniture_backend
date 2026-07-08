@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { ProjectsRepository } from './projects.repository';
 import { NotificationsService } from '../notifications/notifications.service';
+import { InvoicesService } from '../invoices/invoices.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 
@@ -20,6 +21,7 @@ export class ProjectStatusService {
   constructor(
     private readonly repo: ProjectsRepository,
     private readonly notificationsService: NotificationsService,
+    private readonly invoicesService: InvoicesService,
     @InjectQueue('email') private readonly emailQueue: Queue,
   ) {}
 
@@ -77,6 +79,19 @@ export class ProjectStatusService {
         });
       } catch (error) {
         this.logger.error(`Failed to queue job-completed email: ${error.message}`);
+      }
+    }
+
+    // Auto-create invoice when status becomes 'paid'
+    if (newStatus === 'paid') {
+      try {
+        const existingInvoice = await this.invoicesService.findByProjectId(projectId);
+        if (!existingInvoice) {
+          await this.invoicesService.createFromProject(projectId, changedBy);
+          this.logger.log(`Invoice auto-created for project ${project.projectNumber}`);
+        }
+      } catch (error) {
+        this.logger.error(`Failed to auto-create invoice: ${error.message}`);
       }
     }
 

@@ -69,7 +69,8 @@ export class UploadsService {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
           folder,
-          resource_type: 'raw',
+          resource_type: 'auto',
+          access_mode: 'public',
         },
         (error: any, result: UploadApiResponse) => {
           if (error) return reject(new BadRequestException(error.message));

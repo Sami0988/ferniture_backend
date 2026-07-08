@@ -1,5 +1,38 @@
 import { IsString, IsNotEmpty, IsOptional, IsEnum, IsDateString, IsArray, IsUUID, IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class ProjectQueryDto {
+  @ApiPropertyOptional({ default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  page?: number = 1;
+
+  @ApiPropertyOptional({ default: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  limit?: number = 20;
+
+  @ApiPropertyOptional({ enum: ['new', 'in_progress', 'completed', 'delivered', 'paid', 'cancelled'] })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @ApiPropertyOptional({ enum: ['furniture', 'aluminum', 'interior_design', 'custom_orders', 'accessories'] })
+  @IsOptional()
+  @IsString()
+  division?: string;
+
+  @ApiPropertyOptional({ enum: ['normal', 'urgent', 'vip'] })
+  @IsOptional()
+  @IsString()
+  priority?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
 
 export class CreateProjectDto {
   @ApiPropertyOptional({ example: 'PRJ-2026-0001' })
@@ -24,6 +57,16 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 2500.00 })
+  @IsOptional()
+  @IsNumber()
+  totalPrice?: number;
+
+  @ApiPropertyOptional({ example: 500.00 })
+  @IsOptional()
+  @IsNumber()
+  paidNowPrice?: number;
 
   @ApiProperty({ example: '2026-06-01' })
   @IsDateString()
@@ -61,6 +104,16 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 2500.00 })
+  @IsOptional()
+  @IsNumber()
+  totalPrice?: number;
+
+  @ApiPropertyOptional({ example: 500.00 })
+  @IsOptional()
+  @IsNumber()
+  paidNowPrice?: number;
 
   @ApiPropertyOptional({ enum: ['new', 'in_progress', 'completed', 'delivered', 'paid', 'cancelled'] })
   @IsOptional()
@@ -124,4 +177,19 @@ export class CreateProjectAttachmentDto {
   @IsOptional()
   @IsNumber()
   longitude?: number;
+}
+
+export class PayProjectDto {
+  @ApiProperty({ example: 1000.00 })
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty({ enum: ['cash', 'bank_transfer', 'telebirr', 'cbe_birr'] })
+  @IsEnum(['cash', 'bank_transfer', 'telebirr', 'cbe_birr'] as const)
+  method: string;
+
+  @ApiPropertyOptional({ example: 'Final payment' })
+  @IsOptional()
+  @IsString()
+  note?: string;
 }

@@ -73,4 +73,21 @@ export class MailService {
   }) {
     await this.send(to, 'Daily Summary - Kassahun Wood & Aluminum', 'daily-digest', data);
   }
+
+  async sendInvoice(to: string, data: {
+    invoiceNumber: string;
+    projectNumber: string;
+    totalAmount: number;
+    pdfUrl: string;
+    customerName: string;
+  }) {
+    await this.send(to, `Invoice ${data.invoiceNumber} - Kassahun Wood & Aluminum`, 'invoice', {
+      customerName: data.customerName,
+      invoiceNumber: data.invoiceNumber,
+      projectNumber: data.projectNumber,
+      totalAmount: Number(data.totalAmount).toLocaleString(),
+      pdfUrl: data.pdfUrl,
+      companyName: 'Kassahun Wood & Aluminum Work',
+    });
+  }
 }

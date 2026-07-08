@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and, gte } from 'drizzle-orm';
-import { invoices, invoiceItems, payments, customers, projects } from '../../database/schema';
+import { invoices, invoiceItems, payments, customers, projects, projectPayments } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -68,6 +68,113 @@ export class InvoicesRepository {
     });
   }
 
+  async createFromProject(projectId: string, createdBy: string) {
+    const [project] = await this.db
+      .select()
+      .from(projects)
+      .where(eq(projects.id, projectId));
+
+    if (!project) throw new NotFoundException('Project not found');
+
+    // Check if invoice already exists for this project
+    const [existing] = await this.db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.projectId, projectId));
+
+    if (existing) throw new BadRequestException('Invoice already exists for this project');
+
+    const totalPrice = Number(project.totalPrice || 0);
+    if (totalPrice <= 0) throw new BadRequestException('Project has no price set. Set totalPrice first.');
+
+    // Calculate VAT from project price
+    const vatRate = 15;
+    const subtotal = totalPrice;
+    const vatAmount = subtotal * (vatRate / 100);
+    const totalAmount = subtotal + vatAmount;
+
+    // Determine payment status from project payments
+    const projectPaid = Number(project.paidNowPrice || 0);
+    const [extraPayments] = await this.db
+      .select({ total: sql<number>`COALESCE(sum(amount), 0)` })
+      .from(projectPayments)
+      .where(eq(projectPayments.projectId, projectId));
+    const totalProjectPaid = projectPaid + Number(extraPayments.total || 0);
+
+    let paymentStatus: string = 'unpaid';
+    if (totalProjectPaid >= totalAmount) paymentStatus = 'paid';
+    else if (totalProjectPaid > 0) paymentStatus = 'partial';
+
+    const invoiceNumber = await this.generateInvoiceNumber();
+
+    return this.db.transaction(async (tx: any) => {
+      const [invoice] = await tx
+        .insert(invoices)
+        .values({
+          invoiceNumber,
+          projectId,
+          customerId: project.customerId,
+          subtotal: String(subtotal),
+          discountAmount: '0',
+          vatRate: String(vatRate),
+          vatAmount: String(vatAmount),
+          totalAmount: String(totalAmount),
+          paymentStatus: paymentStatus as any,
+          createdBy,
+        })
+        .returning();
+
+      // Create default invoice item from project
+      await tx.insert(invoiceItems).values({
+        invoiceId: invoice.id,
+        description: project.title,
+        quantity: '1',
+        unitPrice: String(subtotal),
+        total: String(subtotal),
+      });
+
+      // Sync existing project payments to invoice
+      if (totalProjectPaid > 0) {
+        // Record upfront payment if exists
+        if (projectPaid > 0) {
+          await tx.insert(payments).values({
+            invoiceId: invoice.id,
+            amount: String(projectPaid),
+            method: 'cash' as any,
+            paidAt: new Date(),
+            verifiedBy: createdBy,
+          });
+        }
+
+        // Record additional project payments
+        const extraPmts = await tx
+          .select()
+          .from(projectPayments)
+          .where(eq(projectPayments.projectId, projectId));
+
+        for (const p of extraPmts) {
+          await tx.insert(payments).values({
+            invoiceId: invoice.id,
+            amount: String(p.amount),
+            method: p.method,
+            paidAt: p.createdAt,
+            verifiedBy: p.recordedBy,
+          });
+        }
+      }
+
+      return this.findById(invoice.id);
+    });
+  }
+
+  async findByProjectId(projectId: string) {
+    const [invoice] = await this.db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.projectId, projectId));
+    return invoice || null;
+  }
+
   async findById(id: string) {
     const [invoice] = await this.db
       .select({
@@ -119,17 +226,22 @@ export class InvoicesRepository {
     };
   }
 
-  async findAll(pagination: PaginationDto, filters?: { paymentStatus?: string }): Promise<PaginatedResult<any>> {
+  async findAll(pagination: PaginationDto, filters?: { paymentStatus?: string; search?: string }): Promise<PaginatedResult<any>> {
     const { page = 1, limit = 20 } = pagination;
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
     if (filters?.paymentStatus) conditions.push(eq(invoices.paymentStatus, filters.paymentStatus as any));
+    if (filters?.search) {
+      conditions.push(sql`(${invoices.invoiceNumber} ILIKE ${'%' + filters.search + '%'} OR ${customers.fullName} ILIKE ${'%' + filters.search + '%'} OR ${projects.title} ILIKE ${'%' + filters.search + '%'} OR ${projects.projectNumber} ILIKE ${'%' + filters.search + '%'})`);
+    }
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [countResult] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(invoices)
+      .leftJoin(customers, eq(invoices.customerId, customers.id))
+      .leftJoin(projects, eq(invoices.projectId, projects.id))
       .where(where as any);
 
     const data = await this.db
@@ -141,6 +253,7 @@ export class InvoicesRepository {
         createdAt: invoices.createdAt,
         customerName: customers.fullName,
         projectNumber: projects.projectNumber,
+        projectTitle: projects.title,
       })
       .from(invoices)
       .leftJoin(customers, eq(invoices.customerId, customers.id))
@@ -193,6 +306,35 @@ export class InvoicesRepository {
         .update(invoices)
         .set({ paymentStatus: paymentStatus as any })
         .where(eq(invoices.id, invoiceId));
+
+      // Sync payment to project if linked
+      if (invoice.projectId) {
+        // Add to project_payments table
+        await tx.insert(projectPayments).values({
+          projectId: invoice.projectId,
+          amount: data.amount,
+          method: data.method as any,
+          note: `Payment via invoice ${invoice.invoiceNumber}`,
+          recordedBy: data.verifiedBy,
+        });
+
+        // Update project's paidNowPrice
+        const [projectPaidResult] = await tx
+          .select({ total: sql<number>`COALESCE(sum(amount), 0)` })
+          .from(projectPayments)
+          .where(eq(projectPayments.projectId, invoice.projectId));
+
+        const [project] = await tx.select().from(projects).where(eq(projects.id, invoice.projectId));
+        const newPaidNow = Number(project.paidNowPrice || 0) + data.amount;
+
+        const updateData: any = { paidNowPrice: newPaidNow, updatedAt: new Date() };
+        // Auto-mark project as paid if fully settled
+        if (newPaidNow >= Number(project.totalPrice || 0) && project.status !== 'paid') {
+          updateData.status = 'paid';
+        }
+
+        await tx.update(projects).set(updateData).where(eq(projects.id, invoice.projectId));
+      }
 
       return payment;
     });

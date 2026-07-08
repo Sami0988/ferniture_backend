@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and } from 'drizzle-orm';
-import { projects, projectAssignees, projectStatusHistory, projectAttachments, customers, users } from '../../database/schema';
+import { projects, projectAssignees, projectStatusHistory, projectAttachments, projectPayments, notifications, customers, users, invoices, invoiceItems, payments } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -36,6 +36,7 @@ export class ProjectsRepository {
     const [countResult] = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(projects)
+      .leftJoin(customers, eq(projects.customerId, customers.id))
       .where(where as any);
 
     const data = await this.db
@@ -47,6 +48,9 @@ export class ProjectsRepository {
         division: projects.division,
         status: projects.status,
         priority: projects.priority,
+        totalPrice: projects.totalPrice,
+        paidNowPrice: projects.paidNowPrice,
+        remainingPrice: sql<number>`COALESCE(${projects.totalPrice}, 0) - COALESCE(${projects.paidNowPrice}, 0)`,
         orderDate: projects.orderDate,
         deliveryDate: projects.deliveryDate,
         completedAt: projects.completedAt,
@@ -75,6 +79,9 @@ export class ProjectsRepository {
         division: projects.division,
         status: projects.status,
         priority: projects.priority,
+        totalPrice: projects.totalPrice,
+        paidNowPrice: projects.paidNowPrice,
+        remainingPrice: sql<number>`COALESCE(${projects.totalPrice}, 0) - COALESCE(${projects.paidNowPrice}, 0)`,
         orderDate: projects.orderDate,
         deliveryDate: projects.deliveryDate,
         completedAt: projects.completedAt,
@@ -276,9 +283,19 @@ export class ProjectsRepository {
   }
 
   async delete(id: string) {
+    // Delete invoice payments and items
+    const projectInvoices = await this.db.select({ id: invoices.id }).from(invoices).where(eq(invoices.projectId, id));
+    for (const inv of projectInvoices) {
+      await this.db.delete(payments).where(eq(payments.invoiceId, inv.id));
+      await this.db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, inv.id));
+    }
+    await this.db.delete(invoices).where(eq(invoices.projectId, id));
+    // Delete project relations
     await this.db.delete(projectAttachments).where(eq(projectAttachments.projectId, id));
     await this.db.delete(projectAssignees).where(eq(projectAssignees.projectId, id));
     await this.db.delete(projectStatusHistory).where(eq(projectStatusHistory.projectId, id));
+    await this.db.delete(projectPayments).where(eq(projectPayments.projectId, id));
+    await this.db.delete(notifications).where(eq(notifications.relatedProjectId, id));
     await this.db.delete(projects).where(eq(projects.id, id));
   }
 }

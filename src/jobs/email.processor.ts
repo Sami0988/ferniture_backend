@@ -21,6 +21,8 @@ export class EmailProcessor extends WorkerHost {
         return this.handleJobCompleted(job.data);
       case 'daily-digest':
         return this.handleDailyDigest(job.data);
+      case 'send-invoice':
+        return this.handleSendInvoice(job.data);
       default:
         this.logger.warn(`Unknown email job type: ${job.name}`);
     }
@@ -50,6 +52,23 @@ export class EmailProcessor extends WorkerHost {
       overdueProjects: data.overdueProjects,
       recentPayments: data.recentPayments,
       newProjects: data.newProjects,
+    });
+  }
+
+  private async handleSendInvoice(data: {
+    to: string;
+    invoiceNumber: string;
+    projectNumber: string;
+    totalAmount: number;
+    pdfUrl: string;
+    customerName: string;
+  }) {
+    await this.mailService.sendInvoice(data.to, {
+      invoiceNumber: data.invoiceNumber,
+      projectNumber: data.projectNumber,
+      totalAmount: data.totalAmount,
+      pdfUrl: data.pdfUrl,
+      customerName: data.customerName,
     });
   }
 }

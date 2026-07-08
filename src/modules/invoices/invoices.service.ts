@@ -27,13 +27,21 @@ export class InvoicesService {
     return this.repo.create({ ...data, createdBy });
   }
 
+  async createFromProject(projectId: string, createdBy: string) {
+    return this.repo.createFromProject(projectId, createdBy);
+  }
+
   async findById(id: string) {
     const invoice = await this.repo.findById(id);
     if (!invoice) throw new NotFoundException('Invoice not found');
     return invoice;
   }
 
-  async findAll(pagination: PaginationDto, filters?: { paymentStatus?: string }) {
+  async findByProjectId(projectId: string) {
+    return this.repo.findByProjectId(projectId);
+  }
+
+  async findAll(pagination: PaginationDto, filters?: { paymentStatus?: string; search?: string }) {
     return this.repo.findAll(pagination, filters);
   }
 
@@ -114,6 +122,54 @@ export class InvoicesService {
     }
   }
 
+  async generatePdfBuffer(invoiceId: string): Promise<Buffer> {
+    const invoice = await this.findById(invoiceId);
+    if (!invoice) throw new NotFoundException('Invoice not found');
+
+    const invoiceUrl = `${this.configService.get('app.frontendUrl') || 'http://localhost:3000'}/invoices/${invoiceId}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(invoiceUrl, { width: 120, margin: 1 });
+
+    const companyInfo = await this.companySettingsService.getCompanyInfo();
+    const html = this.buildInvoiceHtml(invoice, qrCodeDataUrl, companyInfo);
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'domcontentloaded' });
+
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
+        printBackground: true,
+      });
+
+      // Still save to Cloudinary for email/backup, but also return buffer
+      const file: Express.Multer.File = {
+        buffer: pdfBuffer,
+        mimetype: 'application/pdf',
+        originalname: `${invoice.invoiceNumber}.pdf`,
+        fieldname: 'file',
+        encoding: '7bit',
+        size: pdfBuffer.length,
+        stream: null,
+        destination: '',
+        filename: '',
+        path: '',
+      } as any;
+
+      const { url } = await this.uploadsService.uploadDocument(file, 'kassahun/invoices');
+      await this.repo.updatePdfUrl(invoiceId, url);
+
+      return Buffer.from(pdfBuffer);
+    } finally {
+      await browser.close();
+    }
+  }
+
   async delete(id: string) {
     await this.findById(id);
     await this.repo.delete(id);
@@ -143,7 +199,7 @@ export class InvoicesService {
         invoiceNumber: invoice.invoiceNumber,
         projectNumber: invoice.projectNumber,
         totalAmount: invoice.totalAmount,
-        pdfUrl: invoice.pdfUrl || '',
+        pdfUrl: `${this.configService.get('app.frontendUrl') || 'http://localhost:4000'}/api/v1/invoices/${invoiceId}/pdf`,
         customerName: invoice.customerName,
       });
       return { success: true, message: `Invoice emailed to ${invoice.customerEmail}` };

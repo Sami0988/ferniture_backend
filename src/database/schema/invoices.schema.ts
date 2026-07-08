@@ -7,7 +7,7 @@ import { users } from './users.schema';
 export const invoices = pgTable('invoices', {
   id: uuid('id').defaultRandom().primaryKey(),
   invoiceNumber: varchar('invoice_number', { length: 30 }).notNull().unique(),
-  projectId: uuid('project_id').notNull().references(() => projects.id),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
   customerId: uuid('customer_id').notNull().references(() => customers.id),
   subtotal: numeric('subtotal', { precision: 12, scale: 2 }).notNull(),
   discountAmount: numeric('discount_amount', { precision: 12, scale: 2 }).default('0'),

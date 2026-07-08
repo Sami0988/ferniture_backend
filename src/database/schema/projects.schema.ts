@@ -1,5 +1,5 @@
 import { pgTable, uuid, varchar, text, timestamp, date, doublePrecision } from 'drizzle-orm/pg-core';
-import { divisionEnum, projectStatusEnum, priorityEnum, attachmentTypeEnum } from './enums';
+import { divisionEnum, projectStatusEnum, priorityEnum, attachmentTypeEnum, paymentMethodEnum } from './enums';
 import { users } from './users.schema';
 import { customers } from './customers.schema';
 
@@ -12,6 +12,8 @@ export const projects = pgTable('projects', {
   description: text('description'),
   status: projectStatusEnum('status').notNull().default('new'),
   priority: priorityEnum('priority').notNull().default('normal'),
+  totalPrice: doublePrecision('total_price'),
+  paidNowPrice: doublePrecision('paid_now_price').default(0),
   orderDate: date('order_date').notNull(),
   deliveryDate: date('delivery_date'),
   completedAt: timestamp('completed_at'),
@@ -49,4 +51,14 @@ export const projectStatusHistory = pgTable('project_status_history', {
   changedBy: uuid('changed_by').references(() => users.id),
   notes: text('notes'),
   changedAt: timestamp('changed_at').defaultNow().notNull(),
+});
+
+export const projectPayments = pgTable('project_payments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  amount: doublePrecision('amount').notNull(),
+  method: paymentMethodEnum('method').notNull(),
+  note: text('note'),
+  recordedBy: uuid('recorded_by').references(() => users.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });

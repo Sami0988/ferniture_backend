@@ -9,11 +9,14 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ProjectsService } from './projects.service';
 import { ProjectStatusService } from './project-status.service';
+import { ProjectPaymentsService } from './project-payments.service';
 import {
   CreateProjectDto,
   UpdateProjectDto,
   UpdateProjectStatusDto,
   CreateProjectAttachmentDto,
+  PayProjectDto,
+  ProjectQueryDto,
 } from './dto/project.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -25,6 +28,7 @@ export class ProjectsController {
   constructor(
     private readonly projectsService: ProjectsService,
     private readonly statusService: ProjectStatusService,
+    private readonly paymentsService: ProjectPaymentsService,
   ) {}
 
   @Get()
@@ -34,13 +38,8 @@ export class ProjectsController {
   @ApiQuery({ name: 'division', required: false })
   @ApiQuery({ name: 'priority', required: false })
   @ApiQuery({ name: 'search', required: false })
-  findAll(
-    @Query() pagination: PaginationDto,
-    @Query('status') status?: string,
-    @Query('division') division?: string,
-    @Query('priority') priority?: string,
-    @Query('search') search?: string,
-  ) {
+  findAll(@Query() query: ProjectQueryDto) {
+    const { status, division, priority, search, ...pagination } = query;
     return this.projectsService.findAll(pagination, { status, division, priority, search });
   }
 
@@ -134,6 +133,23 @@ export class ProjectsController {
     @Param('attachmentId') attachmentId: string,
   ) {
     return this.projectsService.deleteAttachment(attachmentId);
+  }
+
+  @Get(':id/payments')
+  @ApiOperation({ summary: 'Get project payment summary and history' })
+  getPayments(@Param('id') id: string) {
+    return this.paymentsService.getPaymentSummary(id);
+  }
+
+  @Post(':id/pay')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Record a payment for a project' })
+  addPayment(
+    @Param('id') id: string,
+    @Body() dto: PayProjectDto,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.paymentsService.addPayment(id, dto, userId);
   }
 
   @Delete(':id')
