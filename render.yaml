@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: pnpm install && pnpm build
-    preStartCommand: pnpm db:migrate && pnpm db:seed:super-admin
+    preStartCommand: pnpm drizzle-kit push && pnpm db:seed:super-admin
     startCommand: node dist/src/main.js
     envVars:
       - key: NODE_ENV
