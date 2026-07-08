@@ -7,8 +7,7 @@ import { UploadsService } from '../uploads/uploads.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CompanySettingsService } from '../company-settings/company-settings.service';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { MailService } from '../../mail/mail.service';
 
 @Injectable()
 export class InvoicesService {
@@ -20,7 +19,7 @@ export class InvoicesService {
     private readonly configService: ConfigService,
     private readonly notificationsService: NotificationsService,
     private readonly companySettingsService: CompanySettingsService,
-    @InjectQueue('email') private readonly emailQueue: Queue,
+    private readonly mailService: MailService,
   ) {}
 
   async create(data: any, createdBy: string) {
@@ -194,12 +193,11 @@ export class InvoicesService {
     }
 
     try {
-      await this.emailQueue.add('send-invoice', {
-        to: invoice.customerEmail,
+      await this.mailService.sendInvoice(invoice.customerEmail, {
         invoiceNumber: invoice.invoiceNumber,
         projectNumber: invoice.projectNumber,
         totalAmount: invoice.totalAmount,
-        pdfUrl: `${this.configService.get('app.frontendUrl') || 'http://localhost:4000'}/api/v1/invoices/${invoiceId}/pdf`,
+        pdfUrl: `${this.configService.get('app.frontendUrl') || 'https://kassahun-backend.onrender.com'}/api/v1/invoices/${invoiceId}/pdf`,
         customerName: invoice.customerName,
       });
       return { success: true, message: `Invoice emailed to ${invoice.customerEmail}` };

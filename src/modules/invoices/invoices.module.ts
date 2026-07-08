@@ -5,10 +5,10 @@ import { InvoicesRepository } from './invoices.repository';
 import { UploadsModule } from '../uploads/uploads.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { CompanySettingsModule } from '../company-settings/company-settings.module';
-import { JobsModule } from '../../jobs/jobs.module';
+import { MailModule } from '../../mail/mail.module';
 
 @Module({
-  imports: [forwardRef(() => UploadsModule), NotificationsModule, CompanySettingsModule, JobsModule],
+  imports: [forwardRef(() => UploadsModule), NotificationsModule, CompanySettingsModule, MailModule],
   controllers: [InvoicesController],
   providers: [InvoicesService, InvoicesRepository],
   exports: [InvoicesService],

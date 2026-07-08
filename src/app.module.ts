@@ -24,7 +24,6 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { WebsiteModule } from './modules/website/website.module';
 import { CompanySettingsModule } from './modules/company-settings/company-settings.module';
-import { JobsModule } from './jobs/jobs.module';
 import { HealthModule } from './health/health.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
@@ -66,7 +65,6 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
     ReportsModule,
     WebsiteModule,
     CompanySettingsModule,
-    JobsModule,
     HealthModule,
     SmsModule,
     AuditLogsModule,
