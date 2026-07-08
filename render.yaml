@@ -4,6 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: pnpm install && pnpm build
+    preStartCommand: pnpm db:migrate && pnpm db:seed:super-admin
     startCommand: node dist/src/main.js
     envVars:
       - key: NODE_ENV
@@ -14,7 +15,7 @@ services:
         sync: false
       - key: REDIS_URL
         sync: false
-      - key: JWT_SECRET
+      - key: JWT_ACCESS_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
