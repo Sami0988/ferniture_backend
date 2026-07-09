@@ -79,6 +79,9 @@ export class LetterTemplatesService {
       recipientAddress: 'Addis Ababa, Ethiopia',
       subject: 'Sample Subject Line for Preview',
       body: 'This is sample paragraph one for preview purposes.\n\nThis is sample paragraph two.',
+      referenceNumber: 'REF-2026-0001',
+      dueDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      closingText: 'Thank you for your cooperation.',
     };
     return this.renderToPdf(template.htmlContent, template.cssContent, sampleData);
   }

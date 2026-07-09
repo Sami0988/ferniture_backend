@@ -3,4 +3,5 @@ export const ALLOWED_PLACEHOLDERS = [
   'signatoryName', 'date',
   'recipientCompanyName', 'recipientName', 'recipientTitle', 'recipientAddress',
   'subject', 'body', 'letterNumber',
+  'referenceNumber', 'dueDate', 'closingText',
 ] as const;

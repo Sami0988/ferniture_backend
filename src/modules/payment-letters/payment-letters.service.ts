@@ -130,6 +130,10 @@ export class PaymentLettersService {
       ...(letter.recipientAddress ? letter.recipientAddress.split('\n') : []),
     ].filter(Boolean).join('<br>');
 
+    const formattedDueDate = letter.dueDate
+      ? new Date(letter.dueDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '';
+
     return {
       companyName: companyInfo.company_name || 'Kassahun Wood and Aluminum Work',
       companyLogo: logoHtml,
@@ -144,6 +148,9 @@ export class PaymentLettersService {
       recipientAddress: recipientHtml,
       subject: letter.subject,
       body: bodyHtml,
+      referenceNumber: letter.referenceNumber || '',
+      dueDate: formattedDueDate,
+      closingText: 'Thank you for your cooperation.',
     };
   }
 
