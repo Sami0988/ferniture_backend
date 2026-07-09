@@ -26,6 +26,8 @@ export class CompanySettingsService {
       'company_email',
       'company_address',
       'company_tin',
+      'company_logo',
+      'signatory_name',
       'vat_rate',
       'bank_name',
       'bank_account_number',

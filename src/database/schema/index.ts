@@ -7,4 +7,6 @@ export * from './invoices.schema';
 export * from './notifications.schema';
 export * from './website.schema';
 export * from './system.schema';
+export * from './payment-letters.schema';
+export * from './letter-templates.schema';
 export * from './relations';

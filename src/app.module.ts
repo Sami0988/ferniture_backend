@@ -27,6 +27,8 @@ import { CompanySettingsModule } from './modules/company-settings/company-settin
 import { HealthModule } from './health/health.module';
 import { SmsModule } from './modules/sms/sms.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { PaymentLettersModule } from './modules/payment-letters/payment-letters.module';
+import { LetterTemplatesModule } from './modules/letter-templates/letter-templates.module';
 
 @Module({
   imports: [
@@ -68,6 +70,8 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
     HealthModule,
     SmsModule,
     AuditLogsModule,
+    PaymentLettersModule,
+    LetterTemplatesModule,
   ],
   providers: [
     {

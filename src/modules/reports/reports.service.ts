@@ -48,9 +48,9 @@ export class ReportsService {
       .from(payments)
       .where(gte(payments.createdAt, startOfYear));
 
-    // Outstanding balance
+    // Outstanding balance — total of partial invoices
     const [outstanding] = await this.db
-      .select({ total: sql<number>`COALESCE(sum(total_amount::numeric - paid_total), 0)::numeric` })
+      .select({ total: sql<number>`COALESCE(sum(${invoices.totalAmount}::numeric), 0)::numeric` })
       .from(invoices)
       .where(eq(invoices.paymentStatus, 'partial'));
 
