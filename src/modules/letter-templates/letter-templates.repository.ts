@@ -12,6 +12,13 @@ export class LetterTemplatesRepository {
     description?: string;
     htmlContent: string;
     cssContent?: string;
+    recipientCompanyName?: string;
+    recipientTitle?: string;
+    recipientAddress?: string;
+    subject?: string;
+    body?: string;
+    referenceNumber?: string;
+    dueDate?: string;
     isDefault?: boolean;
     createdBy: string;
   }) {
@@ -22,6 +29,13 @@ export class LetterTemplatesRepository {
         description: data.description || null,
         htmlContent: data.htmlContent,
         cssContent: data.cssContent || null,
+        recipientCompanyName: data.recipientCompanyName || null,
+        recipientTitle: data.recipientTitle || null,
+        recipientAddress: data.recipientAddress || null,
+        subject: data.subject || null,
+        body: data.body || null,
+        referenceNumber: data.referenceNumber || null,
+        dueDate: data.dueDate || null,
         isDefault: data.isDefault || false,
         createdBy: data.createdBy,
       })
@@ -45,6 +59,13 @@ export class LetterTemplatesRepository {
         id: letterTemplates.id,
         name: letterTemplates.name,
         description: letterTemplates.description,
+        recipientCompanyName: letterTemplates.recipientCompanyName,
+        recipientTitle: letterTemplates.recipientTitle,
+        recipientAddress: letterTemplates.recipientAddress,
+        subject: letterTemplates.subject,
+        body: letterTemplates.body,
+        referenceNumber: letterTemplates.referenceNumber,
+        dueDate: letterTemplates.dueDate,
         isDefault: letterTemplates.isDefault,
         isActive: letterTemplates.isActive,
         createdBy: letterTemplates.createdBy,
@@ -76,6 +97,13 @@ export class LetterTemplatesRepository {
     description?: string;
     htmlContent?: string;
     cssContent?: string;
+    recipientCompanyName?: string;
+    recipientTitle?: string;
+    recipientAddress?: string;
+    subject?: string;
+    body?: string;
+    referenceNumber?: string;
+    dueDate?: string;
     isDefault?: boolean;
     isActive?: boolean;
   }) {

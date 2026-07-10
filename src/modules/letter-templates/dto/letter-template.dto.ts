@@ -18,6 +18,39 @@ export class CreateLetterTemplateDto {
   @IsString()
   @IsOptional()
   cssContent?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  recipientCompanyName?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  recipientTitle?: string;
+
+  @IsString()
+  @IsOptional()
+  recipientAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  subject?: string;
+
+  @IsString()
+  @IsOptional()
+  body?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  referenceNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  dueDate?: string;
 }
 
 export class UpdateLetterTemplateDto {
@@ -38,4 +71,37 @@ export class UpdateLetterTemplateDto {
   @IsString()
   @IsOptional()
   cssContent?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  recipientCompanyName?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  recipientTitle?: string;
+
+  @IsString()
+  @IsOptional()
+  recipientAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  subject?: string;
+
+  @IsString()
+  @IsOptional()
+  body?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  referenceNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  dueDate?: string;
 }

@@ -10,6 +10,14 @@ export const letterTemplates = pgTable('letter_templates', {
   htmlContent: text('html_content').notNull(),
   cssContent: text('css_content'),
 
+  recipientCompanyName: varchar('recipient_company_name', { length: 255 }),
+  recipientTitle: varchar('recipient_title', { length: 255 }),
+  recipientAddress: text('recipient_address'),
+  subject: varchar('subject', { length: 500 }),
+  body: text('body'),
+  referenceNumber: varchar('reference_number', { length: 100 }),
+  dueDate: varchar('due_date', { length: 50 }),
+
   isDefault: boolean('is_default').notNull().default(false),
   isActive: boolean('is_active').notNull().default(true),
 
