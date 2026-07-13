@@ -82,6 +82,16 @@ export class CreateProjectDto {
   @IsUUID()
   leadEmployeeId?: string;
 
+  @ApiPropertyOptional({ example: 'Downtown Branch' })
+  @IsOptional()
+  @IsString()
+  branchName?: string;
+
+  @ApiPropertyOptional({ example: 'Addis Ababa' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
   @ApiPropertyOptional({ enum: ['normal', 'urgent', 'vip'] })
   @IsOptional()
   @IsEnum(['normal', 'urgent', 'vip'] as const)
@@ -104,6 +114,16 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ example: 'Downtown Branch' })
+  @IsOptional()
+  @IsString()
+  branchName?: string;
+
+  @ApiPropertyOptional({ example: 'Addis Ababa' })
+  @IsOptional()
+  @IsString()
+  city?: string;
 
   @ApiPropertyOptional({ example: 2500.00 })
   @IsOptional()
