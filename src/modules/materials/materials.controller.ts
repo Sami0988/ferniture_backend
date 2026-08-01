@@ -1,12 +1,11 @@
 import {
   Controller, Get, Post, Put, Delete, Patch,
-  Body, Param, Query, UseGuards, UseInterceptors,
-  UploadedFiles,
+  Body, Param, Query, UseInterceptors,
+  UploadedFiles, Header,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { MaterialsService } from './materials.service';
 import {
@@ -23,14 +22,29 @@ export class MaterialsController {
   constructor(private readonly materialsService: MaterialsService) {}
 
   @Get('public')
+  @Public()
   @ApiOperation({ summary: 'List public materials (no auth required)' })
   findPublic() {
     return this.materialsService.findPublic();
   }
 
+  @Get('store')
+  @Public()
+  @Header('Cache-Control', 'public, max-age=300, stale-while-revalidate=600')
+  @ApiOperation({ summary: 'List materials for storefront (no auth required)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  findStoreMaterials(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page) : undefined;
+    const l = limit ? parseInt(limit) : undefined;
+    return this.materialsService.findPublicForStore(p, l);
+  }
+
   @Get()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'List all materials (admin)' })
   @ApiQuery({ name: 'page', required: false })
@@ -51,7 +65,6 @@ export class MaterialsController {
 
   @Get(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get material by ID' })
   findOne(@Param('id') id: string) {
     return this.materialsService.findById(id);
@@ -59,7 +72,6 @@ export class MaterialsController {
 
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin', 'manager')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'swatchImage', maxCount: 1 },
@@ -93,7 +105,6 @@ export class MaterialsController {
 
   @Put(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin', 'manager')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'swatchImage', maxCount: 1 },
@@ -127,7 +138,6 @@ export class MaterialsController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('super_admin')
   @ApiOperation({ summary: 'Delete material' })
   remove(@Param('id') id: string) {
@@ -137,7 +147,6 @@ export class MaterialsController {
 
 @ApiTags('Project Materials')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('projects/:projectId/materials')
 export class ProjectMaterialsController {
   constructor(private readonly materialsService: MaterialsService) {}

@@ -151,6 +151,11 @@ export class CreateGalleryImageDto {
   @IsString()
   roomType?: string;
 
+  @ApiPropertyOptional({ enum: ['tall', 'wide', 'square'], default: 'square' })
+  @IsOptional()
+  @IsString()
+  aspect?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

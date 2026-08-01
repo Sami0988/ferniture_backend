@@ -9,7 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Logger, UseGuards } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { JwtService } from '@nestjs/jwt';
+import { WsJwtGuard } from '../../common/guards/ws-jwt.guard';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -27,31 +27,34 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   private readonly logger = new Logger(NotificationsGateway.name);
   private connectedClients = new Map<string, AuthenticatedSocket>();
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(private readonly wsJwtGuard: WsJwtGuard) {}
 
   async handleConnection(client: AuthenticatedSocket) {
     try {
-      const token = client.handshake.auth?.token || client.handshake.query?.token;
-      if (!token) {
+      // Use the guard to validate the token
+      const context = {
+        switchToWs: () => ({ getClient: () => client }),
+        getHandler: () => null,
+        getClass: () => NotificationsGateway,
+      } as any;
+
+      const canActivate = await this.wsJwtGuard.canActivate(context);
+      if (!canActivate) {
         client.disconnect();
         return;
       }
 
-      const payload = this.jwtService.verify(token as string);
-      client.userId = payload.sub;
-      client.userRole = payload.role;
-
       this.connectedClients.set(client.id, client);
 
       // Join user-specific room
-      client.join(`user:${payload.sub}`);
+      client.join(`user:${client.userId}`);
 
       // Admins join the admin room
-      if (['super_admin', 'manager'].includes(payload.role)) {
+      if (client.userRole && ['super_admin', 'manager'].includes(client.userRole)) {
         client.join('admins');
       }
 
-      this.logger.log(`Client connected: ${client.id} (user: ${payload.sub})`);
+      this.logger.log(`Client connected: ${client.id} (user: ${client.userId})`);
     } catch (error) {
       this.logger.warn(`Connection rejected: ${client.id}`);
       client.disconnect();

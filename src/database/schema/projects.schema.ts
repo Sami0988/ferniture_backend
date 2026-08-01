@@ -10,6 +10,7 @@ export const projects = pgTable('projects', {
   division: divisionEnum('division').notNull(),
   title: varchar('title', { length: 200 }).notNull(),
   description: text('description'),
+  coverImage: text('cover_image'),
   status: projectStatusEnum('status').notNull().default('new'),
   priority: priorityEnum('priority').notNull().default('normal'),
   totalPrice: doublePrecision('total_price'),

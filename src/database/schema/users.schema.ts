@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, boolean, timestamp, date } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, boolean, timestamp, date, integer } from 'drizzle-orm/pg-core';
 import { userRoleEnum, employeeSpecialtyEnum } from './enums';
 
 export const users = pgTable('users', {
@@ -11,6 +11,10 @@ export const users = pgTable('users', {
   avatarUrl: text('avatar_url'),
   isActive: boolean('is_active').notNull().default(true),
   languagePref: varchar('language_pref', { length: 5 }).default('en'),
+  failedLoginAttempts: integer('failed_login_attempts').notNull().default(0),
+  lockedUntil: timestamp('locked_until'),
+  mfaSecret: text('mfa_secret'),
+  mfaEnabled: boolean('mfa_enabled').notNull().default(false),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -29,7 +33,9 @@ export const refreshTokens = pgTable('refresh_tokens', {
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   tokenHash: text('token_hash').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
+  revoked: boolean('revoked').notNull().default(false),
   revokedAt: timestamp('revoked_at'),
+  replacedByTokenId: uuid('replaced_by_token_id'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -39,5 +45,23 @@ export const passwordResetOtps = pgTable('password_reset_otps', {
   otpHash: text('otp_hash').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
   usedAt: timestamp('used_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const mfaBackupCodes = pgTable('mfa_backup_codes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  codeHash: text('code_hash').notNull(),
+  used: boolean('used').notNull().default(false),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const authAuditLog = pgTable('auth_audit_log', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  event: varchar('event', { length: 50 }).notNull(),
+  ip: varchar('ip', { length: 45 }),
+  userAgent: text('user_agent'),
+  metadata: text('metadata'), // JSONB stored as text for Drizzle compat
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

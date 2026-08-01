@@ -1,12 +1,11 @@
 import {
   Controller, Get, Post, Put, Patch, Delete,
-  Body, Param, Query, UseGuards, UseInterceptors,
-  UploadedFiles,
+  Body, Param, Query, UseInterceptors,
+  UploadedFiles, Header,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { WebsiteService } from './website.service';
 import {
@@ -25,6 +24,21 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 @Controller('website/products')
 export class PublicProductsController {
   constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get('store')
+  @Public()
+  @Header('Cache-Control', 'public, max-age=300, stale-while-revalidate=600')
+  @ApiOperation({ summary: 'List products for storefront (no auth required)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  findStoreProducts(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const p = page ? parseInt(page) : undefined;
+    const l = limit ? parseInt(limit) : undefined;
+    return this.websiteService.getPublicProductsForStore(p, l);
+  }
 
   @Get()
   @ApiOperation({ summary: 'List public products' })
@@ -56,6 +70,29 @@ export class PublicGalleryController {
   @ApiOperation({ summary: 'Featured gallery images' })
   findFeatured() {
     return this.websiteService.getFeaturedGallery();
+  }
+}
+
+@ApiTags('Website - Projects')
+@Controller('website/projects')
+export class PublicProjectsController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get('store')
+  @Public()
+  @Header('Cache-Control', 'public, max-age=300, stale-while-revalidate=600')
+  @ApiOperation({ summary: 'List completed projects for storefront' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'division', required: false, enum: ['furniture', 'aluminum', 'interior_design'] })
+  findStoreProjects(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('division') division?: string,
+  ) {
+    const p = page ? parseInt(page) : undefined;
+    const l = limit ? parseInt(limit) : undefined;
+    return this.websiteService.getProjectsForStore(p, l, division);
   }
 }
 
@@ -123,7 +160,6 @@ export class PublicFaqsController {
 
 @ApiTags('Admin - Products')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/products')
 export class AdminProductsController {
   constructor(private readonly websiteService: WebsiteService) {}
@@ -227,7 +263,6 @@ export class AdminProductsController {
 
 @ApiTags('Admin - Gallery')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/gallery')
 export class AdminGalleryController {
   constructor(private readonly websiteService: WebsiteService) {}
@@ -263,7 +298,6 @@ export class AdminGalleryController {
 
 @ApiTags('Admin - Testimonials')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/testimonials')
 export class AdminTestimonialsController {
   constructor(private readonly websiteService: WebsiteService) {}
@@ -299,7 +333,6 @@ export class AdminTestimonialsController {
 
 @ApiTags('Admin - Contact Messages')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/contact')
 export class AdminContactController {
   constructor(private readonly websiteService: WebsiteService) {}
@@ -321,7 +354,6 @@ export class AdminContactController {
 
 @ApiTags('Admin - Quote Requests')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/quotes')
 export class AdminQuotesController {
   constructor(private readonly websiteService: WebsiteService) {}
@@ -343,7 +375,6 @@ export class AdminQuotesController {
 
 @ApiTags('Admin - FAQs')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('admin/faqs')
 export class AdminFaqsController {
   constructor(private readonly websiteService: WebsiteService) {}

@@ -24,6 +24,92 @@ export class WebsiteService {
     return products;
   }
 
+  async getPublicProductsForStore(page?: number, limit?: number) {
+    if (page || limit) {
+      const p = page || 1;
+      const l = limit || 20;
+      const cacheKey = `products:store:${p}:${l}`;
+      let cached = await this.cache.get<{ data: any[]; total: number }>(cacheKey);
+      if (!cached) {
+        cached = await this.repo.findPublicProductsForStorePaginated(p, l);
+        await this.cache.set(cacheKey, cached, 300);
+      }
+
+      const divisionMap: Record<string, string> = {
+        furniture: 'Furniture',
+        aluminum: 'Aluminum',
+        interior_design: 'Interior',
+        custom_orders: 'Custom Orders',
+        accessories: 'Accessories',
+      };
+
+      const materialTypeMap: Record<string, string> = {
+        wood_species: 'Wood',
+        wood_finish: 'Wood',
+        aluminum_profile: 'Aluminum',
+        aluminum_color: 'Aluminum',
+        hardware: 'Hardware',
+        glass: 'Glass',
+        other: 'Other',
+      };
+
+      const products = cached.data.map((p) => ({
+        id: p.id,
+        name: p.name,
+        category: divisionMap[p.division] || p.division,
+        material: p.materialName || (p.materialCategory ? materialTypeMap[p.materialCategory] : null) || 'Unknown',
+        price: p.price ? Number(p.price) : null,
+        image: p.mainImage,
+        description: p.description || null,
+      }));
+
+      return {
+        products,
+        total: cached.total,
+        page: p,
+        limit: l,
+        totalPages: Math.ceil(cached.total / l),
+      };
+    }
+
+    const cacheKey = 'products:store';
+    let rawProducts = await this.cache.get<any[]>(cacheKey);
+    if (!rawProducts) {
+      rawProducts = await this.repo.findPublicProductsForStore();
+      await this.cache.set(cacheKey, rawProducts, 300);
+    }
+
+    const divisionMap: Record<string, string> = {
+      furniture: 'Furniture',
+      aluminum: 'Aluminum',
+      interior_design: 'Interior',
+      custom_orders: 'Custom Orders',
+      accessories: 'Accessories',
+    };
+
+    const materialTypeMap: Record<string, string> = {
+      wood_species: 'Wood',
+      wood_finish: 'Wood',
+      aluminum_profile: 'Aluminum',
+      aluminum_color: 'Aluminum',
+      hardware: 'Hardware',
+      glass: 'Glass',
+      other: 'Other',
+    };
+
+    const products = rawProducts.map((p) => ({
+      id: p.id,
+      name: p.name,
+      category: divisionMap[p.division] || p.division,
+      material: p.materialName || (p.materialCategory ? materialTypeMap[p.materialCategory] : null) || 'Unknown',
+      price: p.price ? Number(p.price) : null,
+      image: p.mainImage,
+      description: p.description || null,
+    }));
+
+    return { products };
+  }
+
   async getProductsPaginated(pagination: PaginationDto, division?: string) {
     return this.repo.findProductsPaginated(pagination, division);
   }
@@ -142,6 +228,52 @@ export class WebsiteService {
     await this.cache.del('gallery:all');
     await this.cache.del('gallery:featured');
     return this.repo.updateGalleryImage(id, data);
+  }
+
+  async getProjectsForStore(page?: number, limit?: number, division?: string) {
+    const divisionMap: Record<string, string> = {
+      furniture: 'Furniture',
+      aluminum: 'Aluminum',
+      interior_design: 'Interior',
+      custom_orders: 'Custom Orders',
+      accessories: 'Accessories',
+    };
+
+    const transformProject = (p: any) => ({
+      id: p.id,
+      title: p.title,
+      division: divisionMap[p.division] || p.division,
+      aspect: p.aspect || 'square',
+      image: p.imageUrl || p.coverImage,
+    });
+
+    if (page || limit || division) {
+      const p = page || 1;
+      const l = limit || 20;
+      const cacheKey = `projects:store:${p}:${l}:${division || 'all'}`;
+      let cached = await this.cache.get<{ data: any[]; total: number }>(cacheKey);
+      if (!cached) {
+        cached = await this.repo.findProjectsForStorePaginated(p, l, division);
+        await this.cache.set(cacheKey, cached, 300);
+      }
+
+      return {
+        projects: cached.data.map(transformProject),
+        total: cached.total,
+        page: p,
+        limit: l,
+        totalPages: Math.ceil(cached.total / l),
+      };
+    }
+
+    const cacheKey = 'projects:store';
+    let rawProjects = await this.cache.get<any[]>(cacheKey);
+    if (!rawProjects) {
+      rawProjects = await this.repo.findProjectsForStore();
+      await this.cache.set(cacheKey, rawProjects, 300);
+    }
+
+    return { projects: rawProjects.map(transformProject) };
   }
 
   // Testimonials

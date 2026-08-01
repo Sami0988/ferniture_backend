@@ -7,9 +7,10 @@ import { ProjectPaymentsService } from './project-payments.service';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { InvoicesModule } from '../invoices/invoices.module';
 import { JobsModule } from '../../jobs/jobs.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
-  imports: [NotificationsModule, InvoicesModule, JobsModule],
+  imports: [NotificationsModule, InvoicesModule, JobsModule, UploadsModule],
   controllers: [ProjectsController],
   providers: [ProjectsService, ProjectsRepository, ProjectStatusService, ProjectPaymentsService],
   exports: [ProjectsService],

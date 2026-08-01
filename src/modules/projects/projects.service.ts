@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { ProjectsRepository } from './projects.repository';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class ProjectsService {
   constructor(
     private readonly repo: ProjectsRepository,
     private readonly notificationsService: NotificationsService,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   async findAll(pagination: PaginationDto, filters?: { status?: string; division?: string; priority?: string; search?: string }): Promise<PaginatedResult<any>> {
@@ -22,11 +24,15 @@ export class ProjectsService {
     return project;
   }
 
-  async create(data: any, assigneeIds: string[], createdBy: string) {
+  async create(data: any, assigneeIds: string[], createdBy: string, files?: { coverImage?: Express.Multer.File[] }) {
+    if (files?.coverImage?.[0]) {
+      const result = await this.uploadsService.uploadImage(files.coverImage[0], 'kassahun/projects/cover');
+      data.coverImage = result.url;
+    }
+
     const projectNumber = data.projectNumber || await this.repo.generateProjectNumber();
     const project = await this.repo.create({ ...data, projectNumber, createdBy }, assigneeIds);
 
-    // Notify assigned employees
     if (assigneeIds.length > 0) {
       try {
         for (const userId of assigneeIds) {
@@ -44,8 +50,14 @@ export class ProjectsService {
     return project;
   }
 
-  async update(id: string, data: any, assigneeIds?: string[]) {
+  async update(id: string, data: any, assigneeIds?: string[], files?: { coverImage?: Express.Multer.File[] }) {
     await this.findById(id);
+
+    if (files?.coverImage?.[0]) {
+      const result = await this.uploadsService.uploadImage(files.coverImage[0], 'kassahun/projects/cover');
+      data.coverImage = result.url;
+    }
+
     return this.repo.update(id, data, assigneeIds);
   }
 

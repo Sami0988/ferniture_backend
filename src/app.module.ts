@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SentryModule } from '@sentry/nestjs/setup';
-import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 import configuration from './config/configuration';
 import { validationSchema } from './config/env.validation';
 import { DrizzleModule } from './database/drizzle.module';
@@ -29,24 +30,12 @@ import { SmsModule } from './modules/sms/sms.module';
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { PaymentLettersModule } from './modules/payment-letters/payment-letters.module';
 import { LetterTemplatesModule } from './modules/letter-templates/letter-templates.module';
+import { ProjectsToSellModule } from './modules/projects-to-sell/projects-to-sell.module';
+import { GalleryProjectModule } from './modules/gallery-project/gallery-project.module';
 
 @Module({
   imports: [
     SentryModule.forRoot(),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60000,
-          limit: 60,
-          name: 'default',
-        },
-        {
-          ttl: 900000,
-          limit: 5,
-          name: 'auth',
-        },
-      ],
-    }),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
@@ -72,8 +61,17 @@ import { LetterTemplatesModule } from './modules/letter-templates/letter-templat
     AuditLogsModule,
     PaymentLettersModule,
     LetterTemplatesModule,
+    GalleryProjectModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
     {
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,

@@ -17,10 +17,10 @@ export default registerAs('app', () => ({
 
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || '',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || '',
     accessExpiration: process.env.JWT_ACCESS_EXPIRATION || '15m',
-    refreshExpiration: process.env.JWT_REFRESH_EXPIRATION || '7d',
   },
+
+  mfaEncryptionKey: process.env.MFA_ENCRYPTION_KEY || '',
 
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',

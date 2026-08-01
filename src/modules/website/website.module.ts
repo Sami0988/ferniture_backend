@@ -3,6 +3,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import {
   PublicProductsController,
   PublicGalleryController,
+  PublicProjectsController,
   PublicTestimonialsController,
   PublicContactController,
   PublicQuotesController,
@@ -23,6 +24,7 @@ import { UploadsModule } from '../uploads/uploads.module';
   controllers: [
     PublicProductsController,
     PublicGalleryController,
+    PublicProjectsController,
     PublicTestimonialsController,
     PublicContactController,
     PublicQuotesController,

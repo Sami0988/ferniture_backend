@@ -57,3 +57,56 @@ export class AuthTokensResponse {
   accessToken: string;
   refreshToken: string;
 }
+
+export class MfaVerifyDto {
+  @ApiProperty({ description: 'MFA pending token from login response' })
+  @IsString()
+  @IsNotEmpty()
+  mfaPendingToken: string;
+
+  @ApiProperty({ description: '6-digit TOTP code or 8-character backup code' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+}
+
+export class MfaConfirmDto {
+  @ApiProperty({ description: '6-digit TOTP code to confirm MFA setup' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+}
+
+export class MfaRegenerateDto {
+  @ApiProperty({ description: 'Current TOTP code to confirm regeneration' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+}
+
+export class MfaDisableDto {
+  @ApiProperty({ description: 'Current password' })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+
+  @ApiProperty({ description: 'Current TOTP code' })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+}
+
+export class MfaSetupDto {}
+
+export class MfaConfirmWithUserDto extends MfaConfirmDto {}
+
+export class MfaRegenerateWithUserDto extends MfaRegenerateDto {}
+
+export class MfaDisableWithUserDto extends MfaDisableDto {}
+
+export class LoginResponse {
+  accessToken?: string;
+  refreshToken?: string;
+  mfaRequired?: boolean;
+  mfaPendingToken?: string;
+}

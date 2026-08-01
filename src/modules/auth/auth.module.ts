@@ -1,9 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { MfaService } from './mfa.service';
+import { AuthAuditService } from './auth-audit.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JobsModule } from '../../jobs/jobs.module';
 
@@ -18,10 +20,10 @@ import { JobsModule } from '../../jobs/jobs.module';
         signOptions: { expiresIn: configService.get('app.jwt.accessExpiration', '15m') as any },
       }),
     }),
-    JobsModule,
+    forwardRef(() => JobsModule),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtModule],
+  providers: [AuthService, MfaService, AuthAuditService, JwtStrategy],
+  exports: [AuthService, MfaService, AuthAuditService, JwtModule],
 })
 export class AuthModule {}

@@ -102,6 +102,9 @@ export class CreateProjectDto {
   @IsArray()
   @IsUUID('4', { each: true })
   assigneeIds?: string[];
+
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  coverImage?: any;
 }
 
 export class UpdateProjectDto {
@@ -160,6 +163,9 @@ export class UpdateProjectDto {
   @IsArray()
   @IsUUID('4', { each: true })
   assigneeIds?: string[];
+
+  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  coverImage?: any;
 }
 
 export class UpdateProjectStatusDto {

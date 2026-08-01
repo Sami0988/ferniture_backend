@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, smallint, integer, boolean, timestamp, jsonb, numeric } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, smallint, integer, boolean, timestamp, jsonb, numeric, index } from 'drizzle-orm/pg-core';
 import { divisionEnum, contactStatusEnum } from './enums';
 import { projects } from './projects.schema';
 import { materials } from './materials.schema';
@@ -15,31 +15,48 @@ export const testimonials = pgTable('testimonials', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-export const galleryImages = pgTable('gallery_images', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  title: varchar('title', { length: 150 }),
-  division: divisionEnum('division').notNull(),
-  projectId: uuid('project_id').references(() => projects.id),
-  imageUrl: text('image_url').notNull(),
-  roomType: varchar('room_type', { length: 50 }),
-  isFeatured: boolean('is_featured').notNull().default(false),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const galleryImages = pgTable(
+  'gallery_images',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: varchar('title', { length: 150 }),
+    division: divisionEnum('division').notNull(),
+    projectId: uuid('project_id').references(() => projects.id),
+    imageUrl: text('image_url').notNull(),
+    roomType: varchar('room_type', { length: 50 }),
+    aspect: varchar('aspect', { length: 10 }).default('square'),
+    isFeatured: boolean('is_featured').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    divisionIdx: index('gallery_division_idx').on(table.division),
+    projectIdx: index('gallery_project_idx').on(table.projectId),
+  }),
+);
 
-export const products = pgTable('products', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: varchar('name', { length: 150 }).notNull(),
-  division: divisionEnum('division').notNull(),
-  category: varchar('category', { length: 100 }),
-  description: text('description'),
-  materialId: uuid('material_id').references(() => materials.id),
-  price: numeric('price', { precision: 12, scale: 2 }),
-  mainImage: text('main_image'),
-  featureImages: jsonb('feature_images').$type<string[]>().default([]),
-  isFeatured: boolean('is_featured').notNull().default(false),
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const products = pgTable(
+  'products',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: varchar('name', { length: 150 }).notNull(),
+    division: divisionEnum('division').notNull(),
+    category: varchar('category', { length: 100 }),
+    description: text('description'),
+    materialId: uuid('material_id').references(() => materials.id),
+    price: numeric('price', { precision: 12, scale: 2 }),
+    mainImage: text('main_image'),
+    featureImages: jsonb('feature_images').$type<string[]>().default([]),
+    isFeatured: boolean('is_featured').notNull().default(false),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    activeIdx: index('products_active_idx').on(table.isActive),
+    divisionIdx: index('products_division_idx').on(table.division),
+    createdIdx: index('products_created_idx').on(table.createdAt),
+    materialIdx: index('products_material_idx').on(table.materialId),
+  }),
+);
 
 export const contactMessages = pgTable('contact_messages', {
   id: uuid('id').defaultRandom().primaryKey(),

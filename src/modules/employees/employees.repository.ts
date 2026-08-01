@@ -1,6 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and } from 'drizzle-orm';
+import * as crypto from 'crypto';
 import { users, employeeProfiles, projectAssignees, projects } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 import * as bcrypt from 'bcrypt';
@@ -80,7 +81,7 @@ export class EmployeesRepository {
     specialty: string;
     hireDate?: string;
   }) {
-    const password = Math.random().toString(36).slice(-8);
+    const password = crypto.randomBytes(6).toString('base64url').slice(0, 8);
     const passwordHash = await bcrypt.hash(password, 12);
 
     return this.db.transaction(async (tx: any) => {

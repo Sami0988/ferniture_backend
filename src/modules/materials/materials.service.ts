@@ -18,6 +18,50 @@ export class MaterialsService {
     return this.repo.findPublic();
   }
 
+  async findPublicForStore(page?: number, limit?: number) {
+    const materialTypeMap: Record<string, string> = {
+      wood_species: 'Wood',
+      wood_finish: 'Wood',
+      aluminum_profile: 'Aluminum',
+      aluminum_color: 'Aluminum',
+      hardware: 'Hardware',
+      glass: 'Glass',
+      other: 'Other',
+    };
+
+    if (page || limit) {
+      const p = page || 1;
+      const l = limit || 20;
+      const result = await this.repo.findPublicPaginated(p, l);
+
+      const materials = result.data.map((m) => ({
+        id: m.id,
+        name: m.name,
+        type: materialTypeMap[m.category] || m.category,
+        image: m.swatchImageUrl,
+      }));
+
+      return {
+        materials,
+        total: result.total,
+        page: p,
+        limit: l,
+        totalPages: Math.ceil(result.total / l),
+      };
+    }
+
+    const rawMaterials = await this.repo.findPublic();
+
+    const materials = rawMaterials.map((m) => ({
+      id: m.id,
+      name: m.name,
+      type: materialTypeMap[m.category] || m.category,
+      image: m.swatchImageUrl,
+    }));
+
+    return { materials };
+  }
+
   async findById(id: string) {
     const material = await this.repo.findById(id);
     if (!material) throw new NotFoundException('Material not found');

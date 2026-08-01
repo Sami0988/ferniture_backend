@@ -3,7 +3,7 @@ import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, and, sql, ilike } from 'drizzle-orm';
 import {
   products, galleryImages, testimonials,
-  contactMessages, quoteRequests, faqs,
+  contactMessages, quoteRequests, faqs, materials, projects,
 } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
@@ -16,6 +16,55 @@ export class WebsiteRepository {
     const conditions = [eq(products.isActive, true)];
     if (division) conditions.push(eq(products.division, division as any));
     return this.db.select().from(products).where(and(...conditions)).orderBy(desc(products.createdAt));
+  }
+
+  async findPublicProductsForStore(): Promise<any[]> {
+    return this.db
+      .select({
+        id: products.id,
+        name: products.name,
+        division: products.division,
+        category: products.category,
+        price: products.price,
+        mainImage: products.mainImage,
+        description: products.description,
+        materialName: materials.name,
+        materialCategory: materials.category,
+      })
+      .from(products)
+      .leftJoin(materials, eq(products.materialId, materials.id))
+      .where(eq(products.isActive, true))
+      .orderBy(desc(products.createdAt));
+  }
+
+  async findPublicProductsForStorePaginated(page: number = 1, limit: number = 20): Promise<{ data: any[]; total: number }> {
+    const offset = (page - 1) * limit;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(products)
+      .where(eq(products.isActive, true));
+
+    const data = await this.db
+      .select({
+        id: products.id,
+        name: products.name,
+        division: products.division,
+        category: products.category,
+        price: products.price,
+        mainImage: products.mainImage,
+        description: products.description,
+        materialName: materials.name,
+        materialCategory: materials.category,
+      })
+      .from(products)
+      .leftJoin(materials, eq(products.materialId, materials.id))
+      .where(eq(products.isActive, true))
+      .orderBy(desc(products.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return { data, total: countResult.count };
   }
 
   async findProductsPaginated(pagination: PaginationDto, division?: string): Promise<PaginatedResult<any>> {
@@ -155,6 +204,53 @@ export class WebsiteRepository {
     const [updated] = await this.db.update(galleryImages).set(data).where(eq(galleryImages.id, id)).returning();
     if (!updated) throw new NotFoundException('Gallery image not found');
     return updated;
+  }
+
+  // --- Projects for Store ---
+  async findProjectsForStore(): Promise<any[]> {
+    return this.db
+      .select({
+        id: projects.id,
+        title: projects.title,
+        division: projects.division,
+        coverImage: projects.coverImage,
+        imageUrl: galleryImages.imageUrl,
+        aspect: galleryImages.aspect,
+      })
+      .from(projects)
+      .leftJoin(galleryImages, eq(projects.id, galleryImages.projectId))
+      .where(eq(projects.status, 'completed'))
+      .orderBy(desc(projects.deliveredAt));
+  }
+
+  async findProjectsForStorePaginated(page: number = 1, limit: number = 20, division?: string): Promise<{ data: any[]; total: number }> {
+    const offset = (page - 1) * limit;
+    const conditions: any[] = [eq(projects.status, 'completed')];
+    if (division) conditions.push(eq(projects.division, division as any));
+    const where = and(...conditions);
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(where as any);
+
+    const data = await this.db
+      .select({
+        id: projects.id,
+        title: projects.title,
+        division: projects.division,
+        coverImage: projects.coverImage,
+        imageUrl: galleryImages.imageUrl,
+        aspect: galleryImages.aspect,
+      })
+      .from(projects)
+      .leftJoin(galleryImages, eq(projects.id, galleryImages.projectId))
+      .where(where as any)
+      .orderBy(desc(projects.deliveredAt))
+      .limit(limit)
+      .offset(offset);
+
+    return { data, total: countResult.count };
   }
 
   // --- Testimonials ---

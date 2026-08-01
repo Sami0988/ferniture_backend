@@ -9,7 +9,6 @@ export const validationSchema = Joi.object({
   REDIS_URL: Joi.string().optional(),
   REDIS_PASSWORD: Joi.string().allow('').optional(),
   JWT_ACCESS_SECRET: Joi.string().min(32).required(),
-  JWT_REFRESH_SECRET: Joi.string().min(32).required(),
   JWT_ACCESS_EXPIRATION: Joi.string().default('15m'),
   JWT_REFRESH_EXPIRATION: Joi.string().default('7d'),
   CLOUDINARY_CLOUD_NAME: Joi.string().allow('').optional(),
@@ -27,4 +26,5 @@ export const validationSchema = Joi.object({
   AFRICASTALKING_USERNAME: Joi.string().allow('').optional(),
   AFRICASTALKING_SENDER_ID: Joi.string().allow('').optional(),
   SENTRY_DSN: Joi.string().uri().allow('').optional(),
+  MFA_ENCRYPTION_KEY: Joi.string().min(32).optional(),
 });

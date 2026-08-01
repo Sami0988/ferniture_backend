@@ -1,18 +1,15 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, UseGuards, Res, Req,
+  Body, Param, Res, Req,
 } from '@nestjs/common';
 import type { Response, Request } from 'express';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { LetterTemplatesService } from './letter-templates.service';
 import { CreateLetterTemplateDto, UpdateLetterTemplateDto } from './dto/letter-template.dto';
 
 @ApiTags('Letter Templates')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('letter-templates')
 export class LetterTemplatesController {
   constructor(private readonly service: LetterTemplatesService) {}

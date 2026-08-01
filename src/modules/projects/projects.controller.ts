@@ -1,10 +1,10 @@
 import {
   Controller, Get, Post, Put, Delete, Patch,
-  Body, Param, Query, UseGuards,
+  Body, Param, Query, UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ProjectsService } from './projects.service';
@@ -22,7 +22,6 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('projects')
 export class ProjectsController {
   constructor(
@@ -83,20 +82,74 @@ export class ProjectsController {
 
   @Post()
   @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'coverImage', maxCount: 1 },
+  ]))
   @ApiOperation({ summary: 'Create a new project' })
-  create(@Body() dto: CreateProjectDto, @CurrentUser('id') userId: string) {
-    return this.projectsService.create(dto, dto.assigneeIds || [], userId);
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        customerId: { type: 'string', format: 'uuid' },
+        division: { type: 'string', enum: ['furniture', 'aluminum', 'interior_design'] },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        totalPrice: { type: 'number' },
+        paidNowPrice: { type: 'number' },
+        orderDate: { type: 'string', format: 'date' },
+        deliveryDate: { type: 'string', format: 'date' },
+        leadEmployeeId: { type: 'string', format: 'uuid' },
+        branchName: { type: 'string' },
+        city: { type: 'string' },
+        priority: { type: 'string', enum: ['normal', 'urgent', 'vip'] },
+        assigneeIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+        coverImage: { type: 'string', format: 'binary' },
+      },
+      required: ['customerId', 'division', 'title', 'orderDate'],
+    },
+  })
+  create(
+    @Body() dto: CreateProjectDto,
+    @CurrentUser('id') userId: string,
+    @UploadedFiles() files?: { coverImage?: Express.Multer.File[] },
+  ) {
+    return this.projectsService.create(dto, dto.assigneeIds || [], userId, files);
   }
 
   @Put(':id')
   @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'coverImage', maxCount: 1 },
+  ]))
   @ApiOperation({ summary: 'Update project' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        description: { type: 'string' },
+        branchName: { type: 'string' },
+        city: { type: 'string' },
+        totalPrice: { type: 'number' },
+        paidNowPrice: { type: 'number' },
+        status: { type: 'string', enum: ['new', 'in_progress', 'completed', 'delivered', 'paid', 'cancelled'] },
+        priority: { type: 'string', enum: ['normal', 'urgent', 'vip'] },
+        deliveryDate: { type: 'string', format: 'date' },
+        leadEmployeeId: { type: 'string', format: 'uuid' },
+        assigneeIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
+        coverImage: { type: 'string', format: 'binary' },
+      },
+    },
+  })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateProjectDto,
+    @UploadedFiles() files?: { coverImage?: Express.Multer.File[] },
   ) {
     const { assigneeIds, ...data } = dto;
-    return this.projectsService.update(id, data, assigneeIds);
+    return this.projectsService.update(id, data, assigneeIds, files);
   }
 
   @Patch(':id/status')
