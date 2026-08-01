@@ -39,13 +39,13 @@ export class MaterialsRepository {
     return this.db
       .select()
       .from(materials)
-      .where(and(eq(materials.isPublicVisible, true), eq(materials.isActive, true)))
+      .where(eq(materials.isActive, true))
       .orderBy(materials.name);
   }
 
   async findPublicPaginated(page: number = 1, limit: number = 20): Promise<{ data: any[]; total: number }> {
     const offset = (page - 1) * limit;
-    const where = and(eq(materials.isPublicVisible, true), eq(materials.isActive, true));
+    const where = eq(materials.isActive, true);
 
     const [countResult] = await this.db
       .select({ count: sql<number>`count(*)::int` })
