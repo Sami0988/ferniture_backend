@@ -11,7 +11,7 @@ async function seedSuperAdmin() {
   const db = drizzle(client);
 
   const email = process.env.SUPER_ADMIN_EMAIL || 'owner@kassahun.com';
-  const phone = process.env.SUPER_ADMIN_PHONE || '+251911000001';
+  const phone = process.env.SUPER_ADMIN_PHONE || '+251994437585';
   const password = process.env.SUPER_ADMIN_PASSWORD || 'password123';
   const fullName = process.env.SUPER_ADMIN_NAME || 'Kassahun Owner';
 

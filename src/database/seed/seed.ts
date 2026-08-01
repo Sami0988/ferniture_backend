@@ -48,7 +48,7 @@ async function seed() {
     .insert(users)
     .values({
       fullName: 'Kassahun Owner',
-      phone: '+251911000001',
+      phone: '+251994437585',
       email: 'owner@kassahun.com',
       passwordHash,
       role: 'super_admin',
@@ -502,7 +502,7 @@ async function seed() {
 
   console.log('Seed completed successfully!');
   console.log('--- Login Credentials ---');
-  console.log('Super Admin: +251911000001 / password123');
+  console.log('Super Admin: +251994437585 / password123');
   console.log('Manager:     +251911000002 / password123');
   console.log('Employee 1:  +251911000003 / password123');
   console.log('Employee 2:  +251911000004 / password123');
