@@ -29,6 +29,13 @@
       "when": 1752001000000,
       "tag": "0003_add_letter_template_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783180000000,
+      "tag": "0004_add_auth_lockout_mfa_columns",
+      "breakpoints": true
     }
   ]
 }
