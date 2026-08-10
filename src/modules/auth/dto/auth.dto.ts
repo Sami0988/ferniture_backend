@@ -104,6 +104,18 @@ export class MfaRegenerateWithUserDto extends MfaRegenerateDto {}
 
 export class MfaDisableWithUserDto extends MfaDisableDto {}
 
+export class ChangePasswordDto {
+  @ApiProperty({ example: 'newpassword123' })
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+
+  @ApiProperty({ example: 'newpassword123' })
+  @IsString()
+  @MinLength(6)
+  confirmPassword: string;
+}
+
 export class LoginResponse {
   accessToken?: string;
   refreshToken?: string;

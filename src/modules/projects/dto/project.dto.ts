@@ -104,6 +104,7 @@ export class CreateProjectDto {
   assigneeIds?: string[];
 
   @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @IsOptional()
   coverImage?: any;
 }
 
@@ -165,6 +166,7 @@ export class UpdateProjectDto {
   assigneeIds?: string[];
 
   @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @IsOptional()
   coverImage?: any;
 }
 

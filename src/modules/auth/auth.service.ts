@@ -466,4 +466,30 @@ export class AuthService {
 
     return { accessToken, refreshToken };
   }
+
+  async changePassword(userId: string, newPassword: string, confirmPassword: string): Promise<{ message: string }> {
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('Passwords do not match');
+    }
+
+    const [user] = await this.db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId));
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await this.db
+      .update(users)
+      .set({ passwordHash, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+
+    await this.revokeAllUserTokens(userId);
+
+    return { message: 'Password changed successfully' };
+  }
 }

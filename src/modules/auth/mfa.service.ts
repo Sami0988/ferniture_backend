@@ -20,6 +20,9 @@ export class MfaService {
   ) {}
 
   async generateSecret(userId: string): Promise<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }> {
+    if (!userId) {
+      throw new BadRequestException('User ID is required');
+    }
     if (!this.configService.get<string>('app.mfaEncryptionKey')) {
       throw new BadRequestException('MFA is not configured on this server. Set MFA_ENCRYPTION_KEY to enable.');
     }

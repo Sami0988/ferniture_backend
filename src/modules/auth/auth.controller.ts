@@ -6,7 +6,7 @@ import { MfaService } from './mfa.service';
 import { Public } from '../../common/decorators/public.decorator';
 import {
   LoginDto, RegisterDto, RefreshTokenDto, AuthTokensResponse, LoginResponse,
-  MfaVerifyDto, MfaConfirmDto, MfaRegenerateDto, MfaDisableDto,
+  MfaVerifyDto, MfaConfirmDto, MfaRegenerateDto, MfaDisableDto, ChangePasswordDto,
 } from './dto/auth.dto';
 
 @ApiTags('Auth')
@@ -82,6 +82,17 @@ export class AuthController {
 
   // ==================== MFA ENDPOINTS ====================
 
+  @Post('change-password')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change password for authenticated user' })
+  async changePassword(
+    @Request() req: any,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    return this.authService.changePassword(req.user.id, dto.newPassword, dto.confirmPassword);
+  }
+
   @Post('mfa/setup')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
@@ -89,7 +100,7 @@ export class AuthController {
   async mfaSetup(
     @Request() req: any,
   ): Promise<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }> {
-    return this.mfaService.generateSecret(req.user.userId);
+    return this.mfaService.generateSecret(req.user.id);
   }
 
   @Post('mfa/confirm')
@@ -100,7 +111,7 @@ export class AuthController {
     @Request() req: any,
     @Body() dto: MfaConfirmDto,
   ): Promise<{ backupCodes: string[] }> {
-    const backupCodes = await this.mfaService.confirmSetup(req.user.userId, dto.token);
+    const backupCodes = await this.mfaService.confirmSetup(req.user.id, dto.token);
     return { backupCodes };
   }
 
@@ -121,7 +132,7 @@ export class AuthController {
     @Request() req: any,
     @Body() dto: MfaRegenerateDto,
   ): Promise<{ backupCodes: string[] }> {
-    const backupCodes = await this.mfaService.regenerateBackupCodes(req.user.userId, dto.token);
+    const backupCodes = await this.mfaService.regenerateBackupCodes(req.user.id, dto.token);
     return { backupCodes };
   }
 
@@ -133,7 +144,7 @@ export class AuthController {
     @Request() req: any,
     @Body() dto: MfaDisableDto,
   ): Promise<{ message: string }> {
-    await this.mfaService.disable(req.user.userId, dto.password, dto.token);
+    await this.mfaService.disable(req.user.id, dto.password, dto.token);
     return { message: 'MFA disabled successfully' };
   }
 }
