@@ -30,8 +30,21 @@ export class ProjectsService {
       data.coverImage = result.url;
     }
 
-    const projectNumber = data.projectNumber || await this.repo.generateProjectNumber();
-    const project = await this.repo.create({ ...data, projectNumber, createdBy }, assigneeIds);
+    const maxRetries = 5;
+    let project: any;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const projectNumber = data.projectNumber || await this.repo.generateProjectNumber();
+      try {
+        project = await this.repo.create({ ...data, projectNumber, createdBy }, assigneeIds);
+        break;
+      } catch (error: any) {
+        if (error?.code === '23505' && attempt < maxRetries - 1) {
+          this.logger.warn(`Duplicate project number ${projectNumber}, retrying (${attempt + 1}/${maxRetries})`);
+          continue;
+        }
+        throw error;
+      }
+    }
 
     if (assigneeIds.length > 0) {
       try {
