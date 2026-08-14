@@ -16,6 +16,10 @@ import { Queue } from 'bullmq';
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MINUTES = 15;
 
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -178,7 +182,7 @@ export class AuthService {
   }
 
   async refreshTokens(refreshToken: string): Promise<AuthTokensResponse> {
-    const tokenHash = await bcrypt.hash(refreshToken, 8);
+    const tokenHash = hashToken(refreshToken);
 
     const [storedToken] = await this.db
       .select()
@@ -238,7 +242,7 @@ export class AuthService {
     const newTokens = await this.generateTokens(user.id, user.email, user.role);
 
     // Revoke old token and link to new one
-    const newTokenHash = await bcrypt.hash(newTokens.refreshToken, 8);
+    const newTokenHash = hashToken(newTokens.refreshToken);
     const [newRefreshToken] = await this.db
       .select()
       .from(refreshTokens)
@@ -259,7 +263,7 @@ export class AuthService {
   }
 
   async logout(refreshToken: string): Promise<void> {
-    const tokenHash = await bcrypt.hash(refreshToken, 8);
+    const tokenHash = hashToken(refreshToken);
 
     const [storedToken] = await this.db
       .select()
@@ -368,7 +372,7 @@ export class AuthService {
 
     // Generate reset token (short-lived)
     const resetToken = uuidv4();
-    const resetTokenHash = await bcrypt.hash(resetToken, 8);
+    const resetTokenHash = hashToken(resetToken);
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
@@ -382,7 +386,7 @@ export class AuthService {
   }
 
   async resetPassword(resetToken: string, newPassword: string): Promise<{ message: string }> {
-    const tokenHash = await bcrypt.hash(resetToken, 8);
+    const tokenHash = hashToken(resetToken);
 
     const [storedToken] = await this.db
       .select()
@@ -452,7 +456,7 @@ export class AuthService {
     });
 
     const refreshToken = uuidv4();
-    const refreshTokenHash = await bcrypt.hash(refreshToken, 8);
+    const refreshTokenHash = hashToken(refreshToken);
 
     const expiresDays = 7;
     const expiresAt = new Date();
