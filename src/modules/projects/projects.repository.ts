@@ -9,16 +9,14 @@ export class ProjectsRepository {
   constructor(@Inject(DATABASE_CONNECTION) private readonly db: any) {}
 
   async generateProjectNumber(): Promise<string> {
-    const year = new Date().getFullYear();
-    const [result] = await this.db
-      .select({
-        maxSeq: sql<number>`COALESCE(MAX(CAST(SUBSTRING(${projects.projectNumber} FROM 9) AS INT)), 0)::int`,
-      })
-      .from(projects)
-      .where(sql`${projects.projectNumber} LIKE ${`PRJ-${year}-%`}`);
-
-    const seq = String((result.maxSeq || 0) + 1).padStart(4, '0');
-    return `PRJ-${year}-${seq}`;
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const h = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    return `PRJ-${y}${m}${d}${h}${min}${s}`;
   }
 
   async findAll(pagination: PaginationDto, filters?: { status?: string; division?: string; priority?: string; search?: string }): Promise<PaginatedResult<any>> {
