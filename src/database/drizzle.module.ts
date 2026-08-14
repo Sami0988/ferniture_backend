@@ -14,7 +14,10 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const connectionString = configService.get<string>('app.database.url') || '';
-        const client = postgres(connectionString);
+        const isNeon = connectionString.includes('neon.tech');
+        const client = postgres(connectionString, {
+          ssl: isNeon ? 'require' : false,
+        });
         return drizzle(client, { schema });
       },
     },
