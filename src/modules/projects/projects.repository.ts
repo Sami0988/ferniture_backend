@@ -11,11 +11,13 @@ export class ProjectsRepository {
   async generateProjectNumber(): Promise<string> {
     const year = new Date().getFullYear();
     const [result] = await this.db
-      .select({ count: sql<number>`count(*)::int` })
+      .select({
+        maxSeq: sql<number>`COALESCE(MAX(CAST(SUBSTRING(${projects.projectNumber} FROM 9) AS INT)), 0)::int`,
+      })
       .from(projects)
-      .where(sql`EXTRACT(YEAR FROM ${projects.createdAt}) = ${year}`);
+      .where(sql`${projects.projectNumber} LIKE ${`PRJ-${year}-%`}`);
 
-    const seq = String((result.count || 0) + 1).padStart(4, '0');
+    const seq = String((result.maxSeq || 0) + 1).padStart(4, '0');
     return `PRJ-${year}-${seq}`;
   }
 

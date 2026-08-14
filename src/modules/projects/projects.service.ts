@@ -33,7 +33,11 @@ export class ProjectsService {
     const maxRetries = 5;
     let project: any;
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const projectNumber = data.projectNumber || await this.repo.generateProjectNumber();
+      let projectNumber = data.projectNumber || await this.repo.generateProjectNumber();
+      if (attempt > 0) {
+        const suffix = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + String(Math.floor(Math.random() * 10));
+        projectNumber = `${projectNumber}-${suffix}`;
+      }
       try {
         project = await this.repo.create({ ...data, projectNumber, createdBy }, assigneeIds);
         break;
