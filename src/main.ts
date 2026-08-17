@@ -29,7 +29,7 @@ async function bootstrap() {
   const corsOrigin = process.env.CORS_ORIGIN || '';
   const allowedOrigins = corsOrigin
     .split(',')
-    .map((o) => o.trim())
+    .map((o) => o.trim().replace(/\/+$/, ''))
     .filter(Boolean);
   const allowAll = allowedOrigins.includes('*') || corsOrigin === '*';
 
