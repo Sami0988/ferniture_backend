@@ -63,10 +63,10 @@ export class RegisterDto {
 }
 
 export class RefreshTokenDto {
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
-  refreshToken: string;
+  @IsOptional()
+  refreshToken?: string;
 }
 
 export class AuthTokensResponse {

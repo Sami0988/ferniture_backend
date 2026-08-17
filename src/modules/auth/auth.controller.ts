@@ -78,7 +78,7 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokensResponse> {
-    const refreshToken = dto.refreshToken || req.cookies?.refreshToken;
+    const refreshToken = dto?.refreshToken || req.cookies?.refreshToken;
     if (!refreshToken) {
       throw new BadRequestException('Refresh token is required');
     }
@@ -95,7 +95,7 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string }> {
-    const refreshToken = dto.refreshToken || req.cookies?.refreshToken;
+    const refreshToken = dto?.refreshToken || req.cookies?.refreshToken;
     if (refreshToken) {
       await this.authService.logout(refreshToken);
     }

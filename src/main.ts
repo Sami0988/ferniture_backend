@@ -87,6 +87,15 @@ async function bootstrap() {
     SwaggerModule.setup('docs', app, document);
   }
 
+  // Root health check for Render (which pings HEAD / and GET /)
+  const httpApp = app.getHttpAdapter();
+  httpApp.get('/', (_req: any, res: any) => {
+    res.status(200).send('OK');
+  });
+  httpApp.head('/', (_req: any, res: any) => {
+    res.status(200).send();
+  });
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 
