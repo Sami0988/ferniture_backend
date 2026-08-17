@@ -23,7 +23,8 @@ export class NotificationsRepository {
   }
 
   async findByUser(userId: string, pagination: PaginationDto): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
 
     const [countResult] = await this.db
@@ -50,11 +51,11 @@ export class NotificationsRepository {
     return result.count;
   }
 
-  async markAsRead(id: string) {
+  async markAsRead(id: string, userId: string) {
     const [updated] = await this.db
       .update(notifications)
       .set({ isRead: true })
-      .where(eq(notifications.id, id))
+      .where(and(eq(notifications.id, id), eq(notifications.userId, userId)))
       .returning();
     if (!updated) throw new NotFoundException('Notification not found');
     return updated;
@@ -88,8 +89,10 @@ export class NotificationsRepository {
     return record;
   }
 
-  async removeFcmToken(token: string) {
-    await this.db.delete(fcmTokens).where(eq(fcmTokens.token, token));
+  async removeFcmToken(userId: string, token: string) {
+    await this.db.delete(fcmTokens).where(
+      and(eq(fcmTokens.token, token), eq(fcmTokens.userId, userId)),
+    );
   }
 
   async getFcmTokensByUser(userId: string) {

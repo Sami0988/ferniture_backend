@@ -68,7 +68,8 @@ export class WebsiteRepository {
   }
 
   async findProductsPaginated(pagination: PaginationDto, division?: string): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
     const conditions = [eq(products.isActive, true)];
     if (division) conditions.push(eq(products.division, division as any));
@@ -91,7 +92,8 @@ export class WebsiteRepository {
   }
 
   async findAllProductsPaginated(pagination: PaginationDto, filters?: { division?: string; search?: string }): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
@@ -149,7 +151,8 @@ export class WebsiteRepository {
   }
 
   async findGalleryPaginated(pagination: PaginationDto, division?: string): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
     const conditions: any[] = [];
     if (division) conditions.push(eq(galleryImages.division, division as any));
@@ -263,7 +266,8 @@ export class WebsiteRepository {
   }
 
   async findTestimonialsPaginated(pagination: PaginationDto, approvedOnly: boolean = false): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
     const conditions = approvedOnly ? [eq(testimonials.isApproved, true)] : [];
     const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -330,7 +334,8 @@ export class WebsiteRepository {
   }
 
   async findContactMessages(pagination: PaginationDto): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
 
     const [countResult] = await this.db
@@ -364,7 +369,8 @@ export class WebsiteRepository {
   }
 
   async findQuoteRequests(pagination: PaginationDto): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
 
     const [countResult] = await this.db
@@ -401,7 +407,8 @@ export class WebsiteRepository {
   }
 
   async findAllFaqsPaginated(pagination: PaginationDto): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
 
     const [countResult] = await this.db

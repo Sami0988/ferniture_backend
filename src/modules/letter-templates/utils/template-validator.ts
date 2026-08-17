@@ -17,15 +17,14 @@ export function validateAndSanitizeTemplate(html: string): string {
     allowedTags: [
       'div', 'span', 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
       'table', 'tr', 'td', 'th', 'thead', 'tbody',
-      'h1', 'h2', 'h3', 'img', 'style',
+      'h1', 'h2', 'h3', 'img',
     ],
     allowedAttributes: {
-      '*': ['class', 'style'],
+      '*': ['class'],
       img: ['src', 'alt', 'width', 'height'],
     },
     disallowedTagsMode: 'discard',
-    allowedSchemes: ['https', 'data'],
-    allowVulnerableTags: true,
+    allowedSchemes: ['https'],
   });
 
   return clean;

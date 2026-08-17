@@ -75,8 +75,8 @@ export class NotificationsService {
     return this.repo.getUnreadCount(userId);
   }
 
-  async markAsRead(id: string) {
-    return this.repo.markAsRead(id);
+  async markAsRead(id: string, userId: string) {
+    return this.repo.markAsRead(id, userId);
   }
 
   async markAllAsRead(userId: string) {
@@ -87,8 +87,8 @@ export class NotificationsService {
     return this.repo.saveFcmToken(userId, token, platform);
   }
 
-  async removeFcmToken(token: string) {
-    await this.repo.removeFcmToken(token);
+  async removeFcmToken(userId: string, token: string) {
+    await this.repo.removeFcmToken(userId, token);
   }
 
   // Convenience methods for common notification types

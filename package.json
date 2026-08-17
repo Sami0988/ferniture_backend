@@ -52,8 +52,11 @@
     "class-validator": "^0.14.1",
     "cloudinary": "^2.5.1",
     "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.39.3",
+    "exceljs": "^4.4.0",
     "firebase-admin": "^13.0.2",
     "handlebars": "^4.7.9",
     "helmet": "^8.0.0",
@@ -63,9 +66,9 @@
     "nodemailer": "^6.9.16",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "pdfmake": "^0.3.11",
     "pino-http": "^10.4.0",
     "postgres": "^3.4.5",
-    "puppeteer": "^24.0.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
@@ -73,7 +76,8 @@
     "socket.io": "^4.8.1",
     "speakeasy": "^2.0.0",
     "streamifier": "^0.1.1",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -129,7 +133,6 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "bcrypt",
-      "puppeteer",
       "esbuild"
     ]
   }

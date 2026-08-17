@@ -30,8 +30,11 @@ export class NotificationsController {
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark notification as read' })
-  markAsRead(@Param('id') id: string) {
-    return this.notificationsService.markAsRead(id);
+  markAsRead(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.notificationsService.markAsRead(id, userId);
   }
 
   @Patch('read-all')
@@ -58,7 +61,10 @@ export class FcmController {
 
   @Delete('token')
   @ApiOperation({ summary: 'Remove FCM token' })
-  removeToken(@Body() body: { token: string }) {
-    return this.notificationsService.removeFcmToken(body.token);
+  removeToken(
+    @CurrentUser('id') userId: string,
+    @Body() body: { token: string },
+  ) {
+    return this.notificationsService.removeFcmToken(userId, body.token);
   }
 }

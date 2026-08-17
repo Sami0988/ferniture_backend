@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
-import * as puppeteer from 'puppeteer';
 import { LetterTemplatesRepository } from './letter-templates.repository';
 import { UploadsService } from '../uploads/uploads.service';
 import { CompanySettingsService } from '../company-settings/company-settings.service';
 import { CreateLetterTemplateDto, UpdateLetterTemplateDto } from './dto/letter-template.dto';
 import { validateAndSanitizeTemplate } from './utils/template-validator';
+import { generatePdfBuffer } from '../../common/services/pdf.service';
 
 @Injectable()
 export class LetterTemplatesService {
@@ -93,36 +93,103 @@ export class LetterTemplatesService {
       html = html.replace(regex, value || '');
     }
 
-    const styleTag = cssContent ? `<style>${cssContent}</style>` : '';
-    const fullHtml = `<!DOCTYPE html><html><head>${styleTag}</head><body>${html}</body></html>`;
+    const content = this.htmlToPdfmakeContent(html);
 
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    const docDefinition = {
+      content,
+      defaultStyle: { font: 'Roboto', fontSize: 10 },
+      pageMargins: [40, 40, 40, 40] as [number, number, number, number],
+    };
 
-    try {
-      const page = await browser.newPage();
-      await page.setRequestInterception(true);
-      page.on('request', (req) => {
-        if (req.resourceType() === 'document' || req.resourceType() === 'xhr') {
-          req.abort();
-        } else {
-          req.continue();
+    return generatePdfBuffer(docDefinition);
+  }
+
+  private htmlToPdfmakeContent(html: string): any[] {
+    const content: any[] = [];
+
+    const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = tableRegex.exec(html)) !== null) {
+      const beforeTable = html.slice(lastIndex, match.index);
+      if (beforeTable.trim()) {
+        content.push(...this.extractTextContent(beforeTable));
+      }
+
+      const tableContent = match[1];
+      const rows: any[][] = [];
+      const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+      let rowMatch;
+      while ((rowMatch = rowRegex.exec(tableContent)) !== null) {
+        const cells: any[] = [];
+        const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+        let cellMatch;
+        while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
+          cells.push({ text: this.stripHtml(cellMatch[1]).trim() });
         }
-      });
+        if (cells.length > 0) rows.push(cells);
+      }
 
-      await page.setContent(fullHtml, { waitUntil: 'domcontentloaded' });
+      if (rows.length > 0) {
+        content.push({
+          table: {
+            headerRows: 1,
+            widths: rows[0].map(() => '*'),
+            body: rows,
+          },
+          layout: 'lightHorizontalLines',
+          margin: [0, 10, 0, 10],
+        });
+      }
 
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        margin: { top: '20mm', right: '15mm', bottom: '20mm', left: '15mm' },
-        printBackground: true,
-      });
-
-      return Buffer.from(pdfBuffer);
-    } finally {
-      await browser.close();
+      lastIndex = match.index + match[0].length;
     }
+
+    const remaining = html.slice(lastIndex);
+    if (remaining.trim()) {
+      content.push(...this.extractTextContent(remaining));
+    }
+
+    if (content.length === 0) {
+      content.push({ text: this.stripHtml(html).trim() || ' ' });
+    }
+
+    return content;
+  }
+
+  private extractTextContent(html: string): any[] {
+    const content: any[] = [];
+    const blocks = html.split(/(?:<br\s*\/?>|<\/p>|<\/div>|<\/h[1-6]>|<\/li>)/i);
+
+    for (const block of blocks) {
+      const text = this.stripHtml(block).trim();
+      if (!text) continue;
+
+      if (/^<h[1-6]/i.test(block.trim())) {
+        const level = parseInt(block.match(/<h(\d)/i)?.[1] || '2');
+        content.push({ text, style: level <= 2 ? 'header' : 'subheader', margin: [0, 10, 0, 5] });
+      } else if (/^<li/i.test(block.trim())) {
+        content.push({ text: `• ${text}`, margin: [15, 2, 0, 2] });
+      } else {
+        content.push({ text, margin: [0, 0, 0, 8], alignment: 'justify' as const });
+      }
+    }
+
+    return content;
+  }
+
+  private stripHtml(html: string): string {
+    return html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .trim();
   }
 }

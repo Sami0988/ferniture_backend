@@ -28,6 +28,7 @@ export class PaymentsController {
   }
 
   @Get(':id')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get payment by ID' })
   findOne(@Param('id') id: string) {
     return this.paymentsService.findById(id);

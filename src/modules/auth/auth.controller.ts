@@ -1,5 +1,6 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, BadRequestException, Request } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, BadRequestException, Request, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { MfaService } from './mfa.service';
@@ -8,6 +9,30 @@ import {
   LoginDto, RegisterDto, RefreshTokenDto, AuthTokensResponse, LoginResponse,
   MfaVerifyDto, MfaConfirmDto, MfaRegenerateDto, MfaDisableDto, ChangePasswordDto,
 } from './dto/auth.dto';
+
+const isProd = process.env.NODE_ENV === 'production';
+
+function setTokenCookies(res: Response, accessToken: string, refreshToken: string) {
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  });
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+}
+
+function clearTokenCookies(res: Response) {
+  res.cookie('accessToken', '', { httpOnly: true, secure: isProd, sameSite: 'strict', path: '/', maxAge: 0 });
+  res.cookie('refreshToken', '', { httpOnly: true, secure: isProd, sameSite: 'strict', path: '/', maxAge: 0 });
+}
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -24,8 +49,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with phone/email and password' })
   @ApiResponse({ status: 200, description: 'Tokens or MFA challenge returned' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() dto: LoginDto): Promise<LoginResponse> {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response): Promise<LoginResponse> {
+    const result = await this.authService.login(dto);
+    if (result.accessToken && result.refreshToken) {
+      setTokenCookies(res, result.accessToken, result.refreshToken);
+    }
+    return result;
   }
 
   @Post('register')
@@ -33,8 +62,10 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new employee account' })
   @ApiResponse({ status: 201, description: 'Account created, tokens returned' })
-  async register(@Body() dto: RegisterDto): Promise<AuthTokensResponse> {
-    return this.authService.register(dto);
+  async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response): Promise<AuthTokensResponse> {
+    const result = await this.authService.register(dto);
+    setTokenCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @Post('refresh')
@@ -42,15 +73,33 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
-  async refresh(@Body() dto: RefreshTokenDto): Promise<AuthTokensResponse> {
-    return this.authService.refreshTokens(dto.refreshToken);
+  async refresh(
+    @Body() dto: RefreshTokenDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthTokensResponse> {
+    const refreshToken = dto.refreshToken || req.cookies?.refreshToken;
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token is required');
+    }
+    const result = await this.authService.refreshTokens(refreshToken);
+    setTokenCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout and revoke refresh token' })
-  async logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> {
-    await this.authService.logout(dto.refreshToken);
+  async logout(
+    @Body() dto: RefreshTokenDto,
+    @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ message: string }> {
+    const refreshToken = dto.refreshToken || req.cookies?.refreshToken;
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
+    clearTokenCookies(res);
     return { message: 'Logged out successfully' };
   }
 
@@ -120,8 +169,13 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify MFA token during login' })
-  async mfaVerify(@Body() dto: MfaVerifyDto): Promise<AuthTokensResponse> {
-    return this.authService.verifyMfaToken(dto.mfaPendingToken, dto.token);
+  async mfaVerify(
+    @Body() dto: MfaVerifyDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthTokensResponse> {
+    const result = await this.authService.verifyMfaToken(dto.mfaPendingToken, dto.token);
+    setTokenCookies(res, result.accessToken, result.refreshToken);
+    return result;
   }
 
   @Post('mfa/regenerate-backup-codes')

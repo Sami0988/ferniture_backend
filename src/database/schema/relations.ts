@@ -15,6 +15,8 @@ import {
   galleryImages,
   products,
 } from './website.schema';
+import { suppliers } from './suppliers.schema';
+import { purchases, purchaseItems } from './purchases.schema';
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   employeeProfile: one(employeeProfiles, {
@@ -195,5 +197,29 @@ export const productsRelations = relations(products, ({ one }) => ({
   material: one(materials, {
     fields: [products.materialId],
     references: [materials.id],
+  }),
+}));
+
+export const suppliersRelations = relations(suppliers, ({ many }) => ({
+  purchases: many(purchases),
+}));
+
+export const purchasesRelations = relations(purchases, ({ one, many }) => ({
+  supplier: one(suppliers, {
+    fields: [purchases.supplierId],
+    references: [suppliers.id],
+  }),
+  createdByUser: one(users, {
+    fields: [purchases.createdBy],
+    references: [users.id],
+    relationName: 'createdBy',
+  }),
+  items: many(purchaseItems),
+}));
+
+export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
+  purchase: one(purchases, {
+    fields: [purchaseItems.purchaseId],
+    references: [purchases.id],
   }),
 }));

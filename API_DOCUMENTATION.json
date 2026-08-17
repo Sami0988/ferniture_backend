@@ -1,0 +1,520 @@
+{
+  "apiVersion": "v1",
+  "baseUrl": "/api/v1",
+  "auth": {
+    "type": "Bearer JWT",
+    "header": "Authorization: Bearer <token>",
+    "roles": ["super_admin", "manager"]
+  },
+  "modules": {
+    "suppliers": {
+      "baseUrl": "/suppliers",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/suppliers",
+          "description": "List all suppliers (paginated)",
+          "auth": ["super_admin", "manager"],
+          "query": {
+            "page": { "type": "number", "default": 1, "description": "Page number" },
+            "limit": { "type": "number", "default": 20, "max": 100, "description": "Items per page" },
+            "search": { "type": "string", "optional": true, "description": "Search by company name or TIN" }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "data": [
+                {
+                  "id": "uuid",
+                  "companyName": "string",
+                  "tinNumber": "string (10 digits)",
+                  "bankAccountNumber": "string | null",
+                  "phone": "string | null",
+                  "address": "string | null",
+                  "createdAt": "ISO timestamp",
+                  "updatedAt": "ISO timestamp"
+                }
+              ],
+              "total": "number",
+              "page": "number",
+              "limit": "number",
+              "totalPages": "number",
+              "hasNext": "boolean",
+              "hasPrevious": "boolean"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/suppliers/search",
+          "description": "Search suppliers by name or TIN",
+          "auth": ["super_admin", "manager"],
+          "query": {
+            "q": { "type": "string", "required": true, "description": "Search term" }
+          },
+          "response": {
+            "success": true,
+            "data": [
+              {
+                "id": "uuid",
+                "companyName": "string",
+                "tinNumber": "string",
+                "phone": "string | null",
+                "address": "string | null"
+              }
+            ]
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/suppliers/:id",
+          "description": "Get supplier by ID",
+          "auth": ["super_admin", "manager"],
+          "params": {
+            "id": { "type": "uuid", "required": true }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "id": "uuid",
+              "companyName": "string",
+              "tinNumber": "string",
+              "bankAccountNumber": "string | null",
+              "phone": "string | null",
+              "address": "string | null",
+              "createdAt": "ISO timestamp",
+              "updatedAt": "ISO timestamp"
+            }
+          },
+          "errors": {
+            "404": "Supplier not found"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/suppliers",
+          "description": "Create a new supplier",
+          "auth": ["super_admin", "manager"],
+          "body": {
+            "companyName": { "type": "string", "required": true, "min": 2, "max": 255 },
+            "tinNumber": { "type": "string", "required": true, "pattern": "^\\d{10}$", "description": "Exactly 10 digits" },
+            "bankAccountNumber": { "type": "string", "optional": true, "max": 100 },
+            "phone": { "type": "string", "optional": true, "max": 50 },
+            "address": { "type": "string", "optional": true }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "id": "uuid",
+              "companyName": "string",
+              "tinNumber": "string",
+              "bankAccountNumber": "string | null",
+              "phone": "string | null",
+              "address": "string | null",
+              "createdAt": "ISO timestamp",
+              "updatedAt": "ISO timestamp"
+            }
+          },
+          "errors": {
+            "400": "Validation failed (invalid TIN format, missing required fields)",
+            "409": "A supplier with TIN number \"XXX\" already exists"
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/suppliers/:id",
+          "description": "Update a supplier",
+          "auth": ["super_admin", "manager"],
+          "params": {
+            "id": { "type": "uuid", "required": true }
+          },
+          "body": {
+            "companyName": { "type": "string", "optional": true, "min": 2, "max": 255 },
+            "tinNumber": { "type": "string", "optional": true, "pattern": "^\\d{10}$" },
+            "bankAccountNumber": { "type": "string", "optional": true, "max": 100 },
+            "phone": { "type": "string", "optional": true, "max": 50 },
+            "address": { "type": "string", "optional": true }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "id": "uuid",
+              "companyName": "string",
+              "tinNumber": "string",
+              "bankAccountNumber": "string | null",
+              "phone": "string | null",
+              "address": "string | null",
+              "createdAt": "ISO timestamp",
+              "updatedAt": "ISO timestamp"
+            }
+          },
+          "errors": {
+            "404": "Supplier not found",
+            "409": "A supplier with TIN number \"XXX\" already exists"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/suppliers/:id",
+          "description": "Delete a supplier",
+          "auth": ["super_admin"],
+          "params": {
+            "id": { "type": "uuid", "required": true }
+          },
+          "response": {
+            "success": true,
+            "data": null
+          },
+          "errors": {
+            "404": "Supplier not found",
+            "409": "Cannot delete supplier: X purchase(s) reference this supplier. Remove or reassign purchases first."
+          }
+        }
+      ]
+    },
+    "purchases": {
+      "baseUrl": "/purchases",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/purchases",
+          "description": "List all purchases (paginated)",
+          "auth": ["super_admin", "manager"],
+          "query": {
+            "page": { "type": "number", "default": 1 },
+            "limit": { "type": "number", "default": 20, "max": 100 },
+            "supplierId": { "type": "uuid", "optional": true, "description": "Filter by supplier" },
+            "from": { "type": "string", "optional": true, "format": "YYYY-MM-DD", "description": "Start date filter" },
+            "to": { "type": "string", "optional": true, "format": "YYYY-MM-DD", "description": "End date filter" }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "data": [
+                {
+                  "id": "uuid",
+                  "supplierId": "uuid",
+                  "supplierName": "string (joined from suppliers)",
+                  "fsNumber": "string",
+                  "bankTransactionNumber": "string | null",
+                  "purchaseDate": "YYYY-MM-DD",
+                  "amountBeforeVat": "string (numeric)",
+                  "vatAmount": "string (numeric)",
+                  "withholdingAmount": "string (numeric)",
+                  "totalAmount": "string (numeric)",
+                  "createdBy": "uuid | null",
+                  "createdAt": "ISO timestamp",
+                  "updatedAt": "ISO timestamp"
+                }
+              ],
+              "total": "number",
+              "page": "number",
+              "limit": "number",
+              "totalPages": "number",
+              "hasNext": "boolean",
+              "hasPrevious": "boolean"
+            }
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/purchases/:id",
+          "description": "Get purchase by ID with items and supplier details",
+          "auth": ["super_admin", "manager"],
+          "params": {
+            "id": { "type": "uuid", "required": true }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "id": "uuid",
+              "supplierId": "uuid",
+              "supplierName": "string",
+              "supplierTin": "string",
+              "supplierPhone": "string | null",
+              "supplierAddress": "string | null",
+              "fsNumber": "string",
+              "bankTransactionNumber": "string | null",
+              "purchaseDate": "YYYY-MM-DD",
+              "amountBeforeVat": "string (numeric)",
+              "vatAmount": "string (numeric)",
+              "withholdingAmount": "string (numeric)",
+              "totalAmount": "string (numeric)",
+              "createdBy": "uuid | null",
+              "createdAt": "ISO timestamp",
+              "updatedAt": "ISO timestamp",
+              "items": [
+                {
+                  "id": "uuid",
+                  "purchaseId": "uuid",
+                  "materialName": "string",
+                  "quantity": "string (numeric)",
+                  "unitPrice": "string (numeric)",
+                  "lineTotal": "string (numeric)"
+                }
+              ]
+            }
+          },
+          "errors": {
+            "404": "Purchase not found"
+          }
+        },
+        {
+          "method": "POST",
+          "path": "/purchases",
+          "description": "Create a purchase with items (tax calculated server-side)",
+          "auth": ["super_admin", "manager"],
+          "body": {
+            "supplierId": { "type": "uuid", "required": true },
+            "fsNumber": { "type": "string", "required": true, "min": 1, "max": 100, "description": "Fiscal seal / receipt number" },
+            "bankTransactionNumber": { "type": "string", "optional": true, "max": 100 },
+            "purchaseDate": { "type": "string", "required": true, "format": "YYYY-MM-DD" },
+            "items": {
+              "type": "array",
+              "required": true,
+              "minItems": 1,
+              "items": {
+                "materialName": { "type": "string", "required": true, "min": 1, "max": 255 },
+                "quantity": { "type": "number", "required": true, "positive": true },
+                "unitPrice": { "type": "number", "required": true, "nonnegative": true }
+              }
+            }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "id": "uuid",
+              "supplierId": "uuid",
+              "fsNumber": "string",
+              "bankTransactionNumber": "string | null",
+              "purchaseDate": "YYYY-MM-DD",
+              "amountBeforeVat": "string (numeric, computed: sum of lineTotals)",
+              "vatAmount": "string (numeric, computed: amountBeforeVat * 0.15)",
+              "withholdingAmount": "string (numeric, computed: amountBeforeVat > 10000 ? amountBeforeVat * 0.02 : 0)",
+              "totalAmount": "string (numeric, computed: amountBeforeVat + vatAmount)",
+              "createdBy": "uuid",
+              "createdAt": "ISO timestamp",
+              "updatedAt": "ISO timestamp"
+            }
+          },
+          "errors": {
+            "400": "Validation failed",
+            "404": "Supplier not found"
+          }
+        },
+        {
+          "method": "PATCH",
+          "path": "/purchases/:id",
+          "description": "Update a purchase (tax recalculated server-side)",
+          "auth": ["super_admin", "manager"],
+          "params": {
+            "id": { "type": "uuid", "required": true }
+          },
+          "body": {
+            "supplierId": { "type": "uuid", "optional": true },
+            "fsNumber": { "type": "string", "optional": true, "min": 1, "max": 100 },
+            "bankTransactionNumber": { "type": "string", "optional": true, "max": 100, "nullable": true },
+            "purchaseDate": { "type": "string", "optional": true, "format": "YYYY-MM-DD" },
+            "items": {
+              "type": "array",
+              "optional": true,
+              "minItems": 1,
+              "items": {
+                "materialName": { "type": "string", "required": true },
+                "quantity": { "type": "number", "required": true, "positive": true },
+                "unitPrice": { "type": "number", "required": true, "nonnegative": true }
+              }
+            }
+          },
+          "response": {
+            "success": true,
+            "data": {
+              "id": "uuid",
+              "supplierId": "uuid",
+              "fsNumber": "string",
+              "bankTransactionNumber": "string | null",
+              "purchaseDate": "YYYY-MM-DD",
+              "amountBeforeVat": "string (numeric)",
+              "vatAmount": "string (numeric)",
+              "withholdingAmount": "string (numeric)",
+              "totalAmount": "string (numeric)",
+              "createdBy": "uuid | null",
+              "createdAt": "ISO timestamp",
+              "updatedAt": "ISO timestamp"
+            }
+          },
+          "errors": {
+            "404": "Purchase not found"
+          }
+        },
+        {
+          "method": "DELETE",
+          "path": "/purchases/:id",
+          "description": "Delete a purchase",
+          "auth": ["super_admin"],
+          "params": {
+            "id": { "type": "uuid", "required": true }
+          },
+          "response": {
+            "success": true,
+            "data": null
+          },
+          "errors": {
+            "404": "Purchase not found"
+          }
+        }
+      ]
+    },
+    "workProjects": {
+      "baseUrl": "/projects",
+      "description": "VAT fields added to existing projects module",
+      "vatFields": {
+        "priceBeforeVat": { "type": "number", "nullable": true, "description": "Price before VAT (set on create/update)" },
+        "vatAmount": { "type": "number", "nullable": true, "description": "Output VAT (computed: priceBeforeVat * 0.15)" },
+        "totalPrice": { "type": "number", "nullable": true, "description": "Total price (computed: priceBeforeVat + vatAmount)" }
+      },
+      "notes": "Use existing POST /projects and PATCH /projects/:id endpoints. Add priceBeforeVat in request body — vatAmount and totalPrice are computed server-side."
+    },
+    "taxReport": {
+      "baseUrl": "/tax-report",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/tax-report",
+          "description": "Get tax report for a period",
+          "auth": ["super_admin", "manager"],
+          "query": {
+            "period": {
+              "type": "string",
+              "required": true,
+              "enum": ["day", "week", "month", "quarter", "year", "custom"],
+              "description": "Predefined period or 'custom' for date range"
+            },
+            "referenceDate": {
+              "type": "string",
+              "optional": true,
+              "format": "YYYY-MM-DD",
+              "description": "Reference date for period calculation (defaults to today)"
+            },
+            "from": {
+              "type": "string",
+              "required_if": "period=custom",
+              "format": "YYYY-MM-DD",
+              "description": "Custom range start"
+            },
+            "to": {
+              "type": "string",
+              "required_if": "period=custom",
+              "format": "YYYY-MM-DD",
+              "description": "Custom range end"
+            }
+          },
+          "examples": [
+            "GET /tax-report?period=month&referenceDate=2026-08-01",
+            "GET /tax-report?period=quarter&referenceDate=2026-08-16",
+            "GET /tax-report?period=custom&from=2026-07-01&to=2026-07-31"
+          ],
+          "response": {
+            "success": true,
+            "data": {
+              "period": {
+                "type": "string (period name)",
+                "from": "YYYY-MM-DD",
+                "to": "YYYY-MM-DD",
+                "label": "string (human-readable, e.g. 'August 2026')"
+              },
+              "purchases": {
+                "totalBeforeVat": "number",
+                "totalVat": "number (input VAT)",
+                "totalWithholding": "number",
+                "count": "number"
+              },
+              "workProjects": {
+                "totalBeforeVat": "number",
+                "totalVat": "number (output VAT)",
+                "count": "number"
+              },
+              "vatSummary": {
+                "outputVat": "number",
+                "inputVat": "number",
+                "netVat": "number (outputVat - inputVat)",
+                "status": "string: 'PAYABLE_TO_GOVERNMENT' | 'REFUNDABLE_FROM_GOVERNMENT'"
+              },
+              "withholdingSummary": {
+                "totalWithheld": "number (separate from VAT, not netted)"
+              },
+              "breakdown": {
+                "purchases": [
+                  {
+                    "id": "uuid",
+                    "supplierName": "string | null",
+                    "fsNumber": "string",
+                    "purchaseDate": "YYYY-MM-DD",
+                    "amountBeforeVat": "string (numeric)",
+                    "vatAmount": "string (numeric)",
+                    "withholdingAmount": "string (numeric)",
+                    "totalAmount": "string (numeric)"
+                  }
+                ],
+                "workProjects": [
+                  {
+                    "id": "uuid",
+                    "projectName": "string",
+                    "clientName": "string | null",
+                    "projectDate": "YYYY-MM-DD",
+                    "priceBeforeVat": "string (numeric)",
+                    "vatAmount": "string (numeric)",
+                    "totalPrice": "string (numeric)"
+                  }
+                ]
+              }
+            }
+          },
+          "errors": {
+            "400": "Validation failed: period=custom requires both 'from' and 'to'; other periods require 'period'. 'from' date must be before or equal to 'to' date"
+          }
+        },
+        {
+          "method": "GET",
+          "path": "/tax-report/export",
+          "description": "Export tax report as CSV or PDF",
+          "auth": ["super_admin", "manager"],
+          "query": {
+            "period": { "type": "string", "required": true, "enum": ["day", "week", "month", "quarter", "year", "custom"] },
+            "referenceDate": { "type": "string", "optional": true, "format": "YYYY-MM-DD" },
+            "from": { "type": "string", "optional": true, "format": "YYYY-MM-DD" },
+            "to": { "type": "string", "optional": true, "format": "YYYY-MM-DD" },
+            "format": { "type": "string", "required": true, "enum": ["csv", "pdf"] }
+          },
+          "response": {
+            "csv": "text/csv file download",
+            "pdf": "application/pdf file download"
+          }
+        }
+      ]
+    }
+  },
+  "schemas": {
+    "validation": {
+      "note": "All validation errors return 400 with structured errors array",
+      "errorFormat": {
+        "statusCode": 400,
+        "message": "Validation failed",
+        "errors": ["field.path: Error message"]
+      }
+    },
+    "taxCalculation": {
+      "vatRate": 0.15,
+      "withholdingRate": 0.02,
+      "withholdingThreshold": 10000,
+      "rules": [
+        "VAT = amountBeforeVat * 0.15",
+        "Withholding = amountBeforeVat > 10000 ? amountBeforeVat * 0.02 : 0",
+        "Total = amountBeforeVat + VAT",
+        "Net VAT = Output VAT (projects) - Input VAT (purchases)",
+        "Net VAT >= 0 → PAYABLE_TO_GOVERNMENT",
+        "Net VAT < 0 → REFUNDABLE_FROM_GOVERNMENT"
+      ]
+    }
+  }
+}

@@ -36,6 +36,20 @@
       "when": 1783180000000,
       "tag": "0004_add_auth_lockout_mfa_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1752002000000,
+      "tag": "0005_add_missing_project_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1755360000000,
+      "tag": "0006_add_suppliers_purchases_vat",
+      "breakpoints": true
     }
   ]
 }

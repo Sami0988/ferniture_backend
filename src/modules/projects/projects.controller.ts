@@ -43,18 +43,21 @@ export class ProjectsController {
   }
 
   @Get(':id')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get project by ID' })
   findOne(@Param('id') id: string) {
     return this.projectsService.findById(id);
   }
 
   @Get(':id/status-history')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get project status history' })
   getStatusHistory(@Param('id') id: string) {
     return this.projectsService.getStatusHistory(id);
   }
 
   @Get(':id/assignees')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get project assignees' })
   getAssignees(@Param('id') id: string) {
     return this.projectsService.getAssignees(id);
@@ -153,6 +156,7 @@ export class ProjectsController {
   }
 
   @Patch(':id/status')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Update project status (validated transitions)' })
   updateStatus(
     @Param('id') id: string,
@@ -163,6 +167,7 @@ export class ProjectsController {
   }
 
   @Get(':id/attachments')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get project attachments' })
   getAttachments(@Param('id') id: string) {
     return this.projectsService.getAttachments(id);
@@ -189,6 +194,7 @@ export class ProjectsController {
   }
 
   @Get(':id/payments')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get project payment summary and history' })
   getPayments(@Param('id') id: string) {
     return this.paymentsService.getPaymentSummary(id);

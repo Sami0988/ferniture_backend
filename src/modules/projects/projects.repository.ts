@@ -20,7 +20,8 @@ export class ProjectsRepository {
   }
 
   async findAll(pagination: PaginationDto, filters?: { status?: string; division?: string; priority?: string; search?: string }): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
@@ -50,6 +51,8 @@ export class ProjectsRepository {
         status: projects.status,
         priority: projects.priority,
         totalPrice: projects.totalPrice,
+        priceBeforeVat: projects.priceBeforeVat,
+        vatAmount: projects.vatAmount,
         paidNowPrice: projects.paidNowPrice,
         remainingPrice: sql<number>`COALESCE(${projects.totalPrice}, 0) - COALESCE(${projects.paidNowPrice}, 0)`,
         orderDate: projects.orderDate,
@@ -84,6 +87,8 @@ export class ProjectsRepository {
         status: projects.status,
         priority: projects.priority,
         totalPrice: projects.totalPrice,
+        priceBeforeVat: projects.priceBeforeVat,
+        vatAmount: projects.vatAmount,
         paidNowPrice: projects.paidNowPrice,
         remainingPrice: sql<number>`COALESCE(${projects.totalPrice}, 0) - COALESCE(${projects.paidNowPrice}, 0)`,
         orderDate: projects.orderDate,

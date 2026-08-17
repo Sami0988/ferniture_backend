@@ -56,6 +56,11 @@ export class UploadsService {
       throw new BadRequestException('No file provided');
     }
 
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      throw new BadRequestException('File too large. Max size: 10MB');
+    }
+
     const allowedMimes = [
       'application/pdf',
       'application/msword',

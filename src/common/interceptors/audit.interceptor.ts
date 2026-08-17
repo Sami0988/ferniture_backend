@@ -100,15 +100,24 @@ export class AuditInterceptor implements NestInterceptor {
   private sanitizeBody(body: any): any {
     if (!body) return null;
 
-    const sanitized = { ...body };
-    const sensitiveFields = ['password', 'passwordHash', 'token', 'secret'];
+    const sensitiveFields = ['password', 'passwordHash', 'token', 'secret', 'refreshToken', 'mfaPendingToken', 'otp', 'newPassword', 'confirmPassword', 'mfaSecret'];
 
-    for (const field of sensitiveFields) {
-      if (sanitized[field]) {
-        sanitized[field] = '[REDACTED]';
+    const sanitize = (obj: any): any => {
+      if (!obj || typeof obj !== 'object') return obj;
+      const sanitized = Array.isArray(obj) ? [...obj] : { ...obj };
+      for (const field of sensitiveFields) {
+        if (field in sanitized) {
+          sanitized[field] = '[REDACTED]';
+        }
       }
-    }
+      for (const key of Object.keys(sanitized)) {
+        if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+          sanitized[key] = sanitize(sanitized[key]);
+        }
+      }
+      return sanitized;
+    };
 
-    return sanitized;
+    return sanitize(body);
   }
 }

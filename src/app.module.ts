@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { MulterModule } from '@nestjs/platform-express';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ThrottlerGuard } from './common/guards/throttler.guard';
 import configuration from './config/configuration';
 import { validationSchema } from './config/env.validation';
 import { DrizzleModule } from './database/drizzle.module';
@@ -32,6 +35,10 @@ import { PaymentLettersModule } from './modules/payment-letters/payment-letters.
 import { LetterTemplatesModule } from './modules/letter-templates/letter-templates.module';
 import { ProjectsToSellModule } from './modules/projects-to-sell/projects-to-sell.module';
 import { GalleryProjectModule } from './modules/gallery-project/gallery-project.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { PurchasesModule } from './modules/purchases/purchases.module';
+import { TaxReportModule } from './modules/tax-report/tax-report.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -40,6 +47,12 @@ import { GalleryProjectModule } from './modules/gallery-project/gallery-project.
       isGlobal: true,
       load: [configuration],
       validationSchema,
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 300 }],
+    }),
+    MulterModule.register({
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
     RedisCacheModule,
     DrizzleModule,
@@ -62,8 +75,16 @@ import { GalleryProjectModule } from './modules/gallery-project/gallery-project.
     PaymentLettersModule,
     LetterTemplatesModule,
     GalleryProjectModule,
+    SuppliersModule,
+    PurchasesModule,
+    TaxReportModule,
+    SearchModule,
   ],
   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

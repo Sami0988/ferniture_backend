@@ -65,6 +65,7 @@ export class MaterialsController {
 
   @Get(':id')
   @ApiBearerAuth()
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get material by ID' })
   findOne(@Param('id') id: string) {
     return this.materialsService.findById(id);
@@ -152,6 +153,7 @@ export class ProjectMaterialsController {
   constructor(private readonly materialsService: MaterialsService) {}
 
   @Get()
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'List materials for a project' })
   getProjectMaterials(@Param('projectId') projectId: string, @Query() pagination: PaginationDto) {
     return this.materialsService.getProjectMaterials(projectId, pagination);
@@ -168,6 +170,7 @@ export class ProjectMaterialsController {
   }
 
   @Patch(':id/approve')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Approve/reject a project material' })
   approve(
     @Param('id') id: string,

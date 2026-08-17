@@ -10,4 +10,6 @@ export * from './system.schema';
 export * from './payment-letters.schema';
 export * from './letter-templates.schema';
 export * from './projects-to-sell.schema';
+export * from './suppliers.schema';
+export * from './purchases.schema';
 export * from './relations';

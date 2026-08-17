@@ -1,31 +1,39 @@
-import { pgTable, uuid, varchar, text, timestamp, date, doublePrecision } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, date, doublePrecision, numeric, index } from 'drizzle-orm/pg-core';
 import { divisionEnum, projectStatusEnum, priorityEnum, attachmentTypeEnum, paymentMethodEnum } from './enums';
 import { users } from './users.schema';
 import { customers } from './customers.schema';
 
-export const projects = pgTable('projects', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  projectNumber: varchar('project_number', { length: 30 }).notNull().unique(),
-  customerId: uuid('customer_id').notNull().references(() => customers.id),
-  division: divisionEnum('division').notNull(),
-  title: varchar('title', { length: 200 }).notNull(),
-  description: text('description'),
-  coverImage: text('cover_image'),
-  status: projectStatusEnum('status').notNull().default('new'),
-  priority: priorityEnum('priority').notNull().default('normal'),
-  totalPrice: doublePrecision('total_price'),
-  paidNowPrice: doublePrecision('paid_now_price').default(0),
-  orderDate: date('order_date').notNull(),
-  deliveryDate: date('delivery_date'),
-  completedAt: timestamp('completed_at'),
-  deliveredAt: timestamp('delivered_at'),
-  branchName: varchar('branch_name', { length: 200 }),
-  city: varchar('city', { length: 100 }),
-  leadEmployeeId: uuid('lead_employee_id').references(() => users.id),
-  createdBy: uuid('created_by').references(() => users.id),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+export const projects = pgTable(
+  'projects',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    projectNumber: varchar('project_number', { length: 30 }).notNull().unique(),
+    customerId: uuid('customer_id').notNull().references(() => customers.id),
+    division: divisionEnum('division').notNull(),
+    title: varchar('title', { length: 200 }).notNull(),
+    description: text('description'),
+    coverImage: text('cover_image'),
+    status: projectStatusEnum('status').notNull().default('new'),
+    priority: priorityEnum('priority').notNull().default('normal'),
+    totalPrice: doublePrecision('total_price'),
+    priceBeforeVat: numeric('price_before_vat', { precision: 14, scale: 2 }),
+    vatAmount: numeric('vat_amount', { precision: 14, scale: 2 }),
+    paidNowPrice: doublePrecision('paid_now_price').default(0),
+    orderDate: date('order_date').notNull(),
+    deliveryDate: date('delivery_date'),
+    completedAt: timestamp('completed_at'),
+    deliveredAt: timestamp('delivered_at'),
+    branchName: varchar('branch_name', { length: 200 }),
+    city: varchar('city', { length: 100 }),
+    leadEmployeeId: uuid('lead_employee_id').references(() => users.id),
+    createdBy: uuid('created_by').references(() => users.id),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    orderDateIdx: index('idx_projects_order_date').on(table.orderDate),
+  }),
+);
 
 export const projectAssignees = pgTable('project_assignees', {
   id: uuid('id').defaultRandom().primaryKey(),

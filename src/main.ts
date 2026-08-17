@@ -4,6 +4,7 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { AppModule } from './app.module';
@@ -17,6 +18,9 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+
+  // Cookie parser (for HttpOnly token cookies)
+  app.use(cookieParser());
 
   // Compression — gzip/brotli for all responses
   app.use(compression());
@@ -56,36 +60,32 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // Validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
+  // Global validation for class-validator DTOs (Zod endpoints use their own pipe)
+  app.useGlobalPipes(new ValidationPipe());
 
-  // Swagger — serves v1 docs
-  const config = new DocumentBuilder()
-    .setTitle('Kassahun Wood & Aluminum Work API')
-    .setDescription('Backend API for Admin Web App and Employee Mobile App')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('Auth', 'Login, register, refresh tokens')
-    .addTag('Users', 'User management')
-    .addTag('Employees', 'Employee management')
-    .addTag('Customers', 'Customer management')
-    .addTag('Projects', 'Work orders and status tracking')
-    .addTag('Materials', 'Material catalog and project materials')
-    .addTag('Uploads', 'File uploads via Cloudinary')
-    .addTag('Notifications', 'Real-time notifications and FCM')
-    .addTag('Invoices', 'Invoices, payments, and PDF generation')
-    .addTag('Website', 'Public website content')
-    .addTag('Health', 'Health check endpoint')
-    .build();
+  // Swagger — only in non-production
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Kassahun Wood & Aluminum Work API')
+      .setDescription('Backend API for Admin Web App and Employee Mobile App')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .addTag('Auth', 'Login, register, refresh tokens')
+      .addTag('Users', 'User management')
+      .addTag('Employees', 'Employee management')
+      .addTag('Customers', 'Customer management')
+      .addTag('Projects', 'Work orders and status tracking')
+      .addTag('Materials', 'Material catalog and project materials')
+      .addTag('Uploads', 'File uploads via Cloudinary')
+      .addTag('Notifications', 'Real-time notifications and FCM')
+      .addTag('Invoices', 'Invoices, payments, and PDF generation')
+      .addTag('Website', 'Public website content')
+      .addTag('Health', 'Health check endpoint')
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('docs', app, document);
+  }
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

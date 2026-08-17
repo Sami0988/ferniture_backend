@@ -28,12 +28,14 @@ export class PaymentLettersController {
   }
 
   @Get(':id')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get payment letter by ID' })
   findOne(@Param('id') id: string) {
     return this.paymentLettersService.findById(id);
   }
 
   @Get(':id/pdf')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Download payment letter PDF' })
   async generatePdf(@Param('id') id: string, @Res() res: Response) {
     const pdfBuffer = await this.paymentLettersService.generatePdfBuffer(id);

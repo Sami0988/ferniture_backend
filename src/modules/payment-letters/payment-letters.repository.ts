@@ -118,7 +118,8 @@ export class PaymentLettersRepository {
     pagination: PaginationDto,
     filters?: { projectId?: string; customerId?: string; status?: string },
   ): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20 } = pagination;
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];

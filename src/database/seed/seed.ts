@@ -8,23 +8,16 @@ import {
   customers,
   projects,
   projectAssignees,
-  projectAttachments,
   projectStatusHistory,
-  projectPayments,
   materials,
   projectMaterials,
   invoices,
   invoiceItems,
   payments,
-  testimonials,
-  galleryImages,
-  products,
-  faqs,
+  suppliers,
+  purchases,
+  purchaseItems,
   companySettings,
-  notifications,
-  contactMessages,
-  quoteRequests,
-  auditLogs,
 } from '../schema';
 
 async function seed() {
@@ -32,460 +25,702 @@ async function seed() {
   const client = postgres(connectionString);
   const db = drizzle(client);
 
+  console.log('Clearing existing data...');
+  await client.unsafe('TRUNCATE TABLE purchase_items CASCADE');
+  await client.unsafe('TRUNCATE TABLE purchases CASCADE');
+  await client.unsafe('TRUNCATE TABLE suppliers CASCADE');
+  await client.unsafe('TRUNCATE TABLE invoice_items CASCADE');
+  await client.unsafe('TRUNCATE TABLE payments CASCADE');
+  await client.unsafe('TRUNCATE TABLE invoices CASCADE');
+  await client.unsafe('TRUNCATE TABLE project_materials CASCADE');
+  await client.unsafe('TRUNCATE TABLE project_assignees CASCADE');
+  await client.unsafe('TRUNCATE TABLE project_status_history CASCADE');
+  await client.unsafe('TRUNCATE TABLE project_payments CASCADE');
+  await client.unsafe('TRUNCATE TABLE project_attachments CASCADE');
+  await client.unsafe('TRUNCATE TABLE projects CASCADE');
+  await client.unsafe('TRUNCATE TABLE materials CASCADE');
+  await client.unsafe('TRUNCATE TABLE customers CASCADE');
+  await client.unsafe('TRUNCATE TABLE employee_profiles CASCADE');
+  await client.unsafe('TRUNCATE TABLE notifications CASCADE');
+  await client.unsafe('TRUNCATE TABLE testimonials CASCADE');
+  await client.unsafe('TRUNCATE TABLE gallery_images CASCADE');
+  await client.unsafe('TRUNCATE TABLE products CASCADE');
+  await client.unsafe('TRUNCATE TABLE faqs CASCADE');
+  await client.unsafe('TRUNCATE TABLE contact_messages CASCADE');
+  await client.unsafe('TRUNCATE TABLE quote_requests CASCADE');
+  await client.unsafe('TRUNCATE TABLE audit_logs CASCADE');
+  await client.unsafe('TRUNCATE TABLE company_settings CASCADE');
+  await client.unsafe('TRUNCATE TABLE letter_templates CASCADE');
+  await client.unsafe('TRUNCATE TABLE payment_letters CASCADE');
+  await client.unsafe('TRUNCATE TABLE refresh_tokens CASCADE');
+  await client.unsafe('TRUNCATE TABLE password_reset_otps CASCADE');
+  await client.unsafe('TRUNCATE TABLE mfa_backup_codes CASCADE');
+  await client.unsafe('TRUNCATE TABLE auth_audit_log CASCADE');
+  await client.unsafe('TRUNCATE TABLE users CASCADE');
+  console.log('Tables cleared.');
+
   console.log('Seeding database...');
 
   const passwordHash = await bcrypt.hash('password123', 12);
 
   // --- Users ---
-  const existingUsers = await db.select().from(users);
-  if (existingUsers.length > 0) {
-    console.log('Database already seeded, skipping...');
-    await client.end();
-    process.exit(0);
-  }
+  const [superAdmin] = await db.insert(users).values({
+    fullName: 'Kassahun Owner',
+    phone: '+251994437585',
+    email: 'owner@kassahun.com',
+    passwordHash,
+    role: 'super_admin',
+  }).returning();
 
-  const [superAdmin] = await db
-    .insert(users)
-    .values({
-      fullName: 'Kassahun Owner',
-      phone: '+251994437585',
-      email: 'owner@kassahun.com',
-      passwordHash,
-      role: 'super_admin',
-    })
-    .returning();
+  const [manager] = await db.insert(users).values({
+    fullName: 'Manager One',
+    phone: '+251911000002',
+    email: 'manager@kassahun.com',
+    passwordHash,
+    role: 'manager',
+  }).returning();
 
-  const [manager] = await db
-    .insert(users)
-    .values({
-      fullName: 'Manager One',
-      phone: '+251911000002',
-      email: 'manager@kassahun.com',
-      passwordHash,
-      role: 'manager',
-    })
-    .returning();
+  const [emp1] = await db.insert(users).values({
+    fullName: 'Abebe Carpenter',
+    phone: '+251911000003',
+    passwordHash,
+    role: 'employee',
+  }).returning();
 
-  const [employee1] = await db
-    .insert(users)
-    .values({
-      fullName: 'Abebe Carpenter',
-      phone: '+251911000003',
-      passwordHash,
-      role: 'employee',
-    })
-    .returning();
+  const [emp2] = await db.insert(users).values({
+    fullName: 'Bereket Fabricator',
+    phone: '+251911000004',
+    passwordHash,
+    role: 'employee',
+  }).returning();
 
-  const [employee2] = await db
-    .insert(users)
-    .values({
-      fullName: 'Bereket Fabricator',
-      phone: '+251911000004',
-      passwordHash,
-      role: 'employee',
-    })
-    .returning();
+  const [emp3] = await db.insert(users).values({
+    fullName: 'Chala Designer',
+    phone: '+251911000005',
+    passwordHash,
+    role: 'employee',
+  }).returning();
 
-  const [employee3] = await db
-    .insert(users)
-    .values({
-      fullName: 'Chala Designer',
-      phone: '+251911000005',
-      passwordHash,
-      role: 'employee',
-    })
-    .returning();
-
-  // --- Employee Profiles ---
   await db.insert(employeeProfiles).values([
-    { userId: employee1.id, specialty: 'carpenter', hireDate: '2024-03-01', idNumber: 'EMP-001' },
-    { userId: employee2.id, specialty: 'aluminum_fabricator', hireDate: '2024-06-15', idNumber: 'EMP-002' },
-    { userId: employee3.id, specialty: 'interior_designer', hireDate: '2025-01-10', idNumber: 'EMP-003' },
+    { userId: emp1.id, specialty: 'carpenter', hireDate: '2024-03-01', idNumber: 'EMP-001' },
+    { userId: emp2.id, specialty: 'aluminum_fabricator', hireDate: '2024-06-15', idNumber: 'EMP-002' },
+    { userId: emp3.id, specialty: 'interior_designer', hireDate: '2025-01-10', idNumber: 'EMP-003' },
   ]);
+
+  // --- Suppliers ---
+  const [sup1] = await db.insert(suppliers).values({
+    companyName: 'Addis Timber Supply',
+    tinNumber: '0011223344',
+    bankAccountNumber: '100020003000',
+    phone: '+251911100001',
+    address: 'Bole, Addis Ababa',
+  }).returning();
+
+  const [sup2] = await db.insert(suppliers).values({
+    companyName: 'Ethio Aluminum Corp',
+    tinNumber: '0022334455',
+    bankAccountNumber: '200030004000',
+    phone: '+251911100002',
+    address: 'Merkato, Addis Ababa',
+  }).returning();
+
+  const [sup3] = await db.insert(suppliers).values({
+    companyName: 'Asian Wood Imports',
+    tinNumber: '0033445566',
+    bankAccountNumber: '300040005000',
+    phone: '+251911100003',
+    address: 'Awash, Addis Ababa',
+  }).returning();
+
+  const [sup4] = await db.insert(suppliers).values({
+    companyName: 'Hardware Hub Ethiopia',
+    tinNumber: '0044556677',
+    bankAccountNumber: '400050006000',
+    phone: '+251911100004',
+    address: 'Kazanchis, Addis Ababa',
+  }).returning();
+
+  const [sup5] = await db.insert(suppliers).values({
+    companyName: 'Glass Works PLC',
+    tinNumber: '0055667788',
+    bankAccountNumber: '500060007000',
+    phone: '+251911100005',
+    address: 'Summit, Addis Ababa',
+  }).returning();
 
   // --- Customers ---
-  const [customer1] = await db
-    .insert(customers)
-    .values({
-      fullName: 'Ato Tesfaye Abate',
-      phone: '+251922111222',
-      email: 'tesfaye@gmail.com',
-      address: 'Bole, Addis Ababa',
-      tinNumber: 'TIN-001',
-      createdBy: superAdmin.id,
-    })
-    .returning();
+  const [cust1] = await db.insert(customers).values({
+    fullName: 'Ato Tesfaye Abate',
+    phone: '+251922111222',
+    email: 'tesfaye@gmail.com',
+    address: 'Bole, Addis Ababa',
+    tinNumber: 'TIN-001',
+    createdBy: superAdmin.id,
+  }).returning();
 
-  const [customer2] = await db
-    .insert(customers)
-    .values({
-      fullName: 'W/ro Hiwot Dagne',
-      phone: '+251933222333',
-      address: 'Kazanchis, Addis Ababa',
-      createdBy: manager.id,
-    })
-    .returning();
+  const [cust2] = await db.insert(customers).values({
+    fullName: 'W/ro Hiwot Dagne',
+    phone: '+251933222333',
+    address: 'Kazanchis, Addis Ababa',
+    createdBy: manager.id,
+  }).returning();
 
-  const [customer3] = await db
-    .insert(customers)
-    .values({
-      fullName: 'Ato Daniel Mulugeta',
-      phone: '+251944333444',
-      email: 'daniel.m@gmail.com',
-      address: 'Merkato, Addis Ababa',
-      tinNumber: 'TIN-003',
-      createdBy: superAdmin.id,
-    })
-    .returning();
+  const [cust3] = await db.insert(customers).values({
+    fullName: 'Ato Daniel Mulugeta',
+    phone: '+251944333444',
+    email: 'daniel.m@gmail.com',
+    address: 'Merkato, Addis Ababa',
+    tinNumber: 'TIN-003',
+    createdBy: superAdmin.id,
+  }).returning();
+
+  const [cust4] = await db.insert(customers).values({
+    fullName: 'Ato Samuel Girma',
+    phone: '+251955444555',
+    email: 'samuel@company.com',
+    address: 'Piassa, Addis Ababa',
+    tinNumber: 'TIN-004',
+    createdBy: manager.id,
+  }).returning();
+
+  const [cust5] = await db.insert(customers).values({
+    fullName: 'W/ro Martha Tekle',
+    phone: '+251966555666',
+    address: 'CMC, Addis Ababa',
+    tinNumber: 'TIN-005',
+    createdBy: superAdmin.id,
+  }).returning();
+
+  const [cust6] = await db.insert(customers).values({
+    fullName: 'Ato Yonas Berhanu',
+    phone: '+251977666777',
+    email: 'yonas@bank.com',
+    address: 'Arat Kilo, Addis Ababa',
+    tinNumber: 'TIN-006',
+    createdBy: superAdmin.id,
+  }).returning();
 
   // --- Materials ---
-  const [matMahogany] = await db
-    .insert(materials)
-    .values({
-      name: 'Ethiopian Mahogany',
-      category: 'wood_species',
-      description: 'Premium local mahogany wood',
-      unitCost: '15000',
-      unit: 'board_ft',
-      supplier: 'Kassahun Timber',
-      isPublicVisible: true,
-    })
-    .returning();
+  const [matMahogany] = await db.insert(materials).values({
+    name: 'Ethiopian Mahogany',
+    category: 'wood_species',
+    description: 'Premium local mahogany wood',
+    unitCost: '15000',
+    unit: 'board_ft',
+    supplier: 'Addis Timber Supply',
+    isPublicVisible: true,
+  }).returning();
 
-  const [matTeak] = await db
-    .insert(materials)
-    .values({
-      name: 'Teak Wood',
-      category: 'wood_species',
-      description: 'Imported teak for high-end furniture',
-      unitCost: '25000',
-      unit: 'board_ft',
-      supplier: 'Asian Imports',
-      isPublicVisible: true,
-    })
-    .returning();
+  const [matTeak] = await db.insert(materials).values({
+    name: 'Teak Wood',
+    category: 'wood_species',
+    description: 'Imported teak for high-end furniture',
+    unitCost: '25000',
+    unit: 'board_ft',
+    supplier: 'Asian Wood Imports',
+    isPublicVisible: true,
+  }).returning();
 
-  const [matMatte] = await db
-    .insert(materials)
-    .values({
-      name: 'Matte Bronze Aluminum Profile',
-      category: 'aluminum_profile',
-      description: 'Heavy-duty aluminum profile with matte bronze finish',
-      unitCost: '850',
-      unit: 'meter',
-      supplier: 'AluPro Ethiopia',
-      isPublicVisible: true,
-    })
-    .returning();
+  const [matAlu] = await db.insert(materials).values({
+    name: 'Matte Bronze Aluminum Profile',
+    category: 'aluminum_profile',
+    description: 'Heavy-duty aluminum profile with matte bronze finish',
+    unitCost: '850',
+    unit: 'meter',
+    supplier: 'Ethio Aluminum Corp',
+    isPublicVisible: true,
+  }).returning();
 
-  const [matGold] = await db
-    .insert(materials)
-    .values({
-      name: 'Gold Anodized Aluminum',
-      category: 'aluminum_color',
-      description: 'Gold anodized finish for decorative frames',
-      unitCost: '1200',
-      unit: 'meter',
-      supplier: 'AluPro Ethiopia',
-    })
-    .returning();
+  const [matGold] = await db.insert(materials).values({
+    name: 'Gold Anodized Aluminum',
+    category: 'aluminum_color',
+    description: 'Gold anodized finish for decorative frames',
+    unitCost: '1200',
+    unit: 'meter',
+    supplier: 'Ethio Aluminum Corp',
+  }).returning();
 
-  const [matMatteFinish] = await db
-    .insert(materials)
-    .values({
-      name: 'Matte Lacquer Finish',
-      category: 'wood_finish',
-      description: 'Water-based matte lacquer for furniture',
-      unitCost: '350',
-      unit: 'liter',
-      isPublicVisible: true,
-    })
-    .returning();
+  const [matFinish] = await db.insert(materials).values({
+    name: 'Matte Lacquer Finish',
+    category: 'wood_finish',
+    description: 'Water-based matte lacquer for furniture',
+    unitCost: '350',
+    unit: 'liter',
+    supplier: 'Hardware Hub Ethiopia',
+    isPublicVisible: true,
+  }).returning();
 
-  const [matGlass] = await db
-    .insert(materials)
-    .values({
-      name: 'Tempered Glass Panel',
-      category: 'glass',
-      description: '6mm tempered glass for cabinet doors',
-      unitCost: '2200',
-      unit: 'sqm',
-      supplier: 'Addis Glass Works',
-      isPublicVisible: true,
-    })
-    .returning();
+  const [matGlass] = await db.insert(materials).values({
+    name: 'Tempered Glass Panel',
+    category: 'glass',
+    description: '6mm tempered glass for cabinet doors',
+    unitCost: '2200',
+    unit: 'sqm',
+    supplier: 'Glass Works PLC',
+    isPublicVisible: true,
+  }).returning();
 
-  const [matHandle] = await db
-    .insert(materials)
-    .values({
-      name: 'Stainless Steel Handle',
-      category: 'hardware',
-      description: 'Brushed stainless steel door handle',
-      unitCost: '450',
-      unit: 'piece',
-      supplier: 'Hardware Hub',
-    })
-    .returning();
+  const [matHandle] = await db.insert(materials).values({
+    name: 'Stainless Steel Handle',
+    category: 'hardware',
+    description: 'Brushed stainless steel door handle',
+    unitCost: '450',
+    unit: 'piece',
+    supplier: 'Hardware Hub Ethiopia',
+  }).returning();
 
-  // --- Projects ---
-  const [project1] = await db
-    .insert(projects)
-    .values({
-      projectNumber: 'KWA-2026-0001',
-      customerId: customer1.id,
-      division: 'furniture',
-      title: 'Custom Dining Table and Chairs',
-      description: '6-seater mahogany dining table with matching chairs',
-      status: 'in_progress',
+  // ===== PURCHASES =====
+  // Strategy: HIGH purchases in Mar, Jun, Oct (stocking months)
+  //           LOW purchases in Jan, Aug, Dec
+
+  const allSuppliers = [sup1, sup2, sup3, sup4, sup5];
+  let fsCounter = 1;
+
+  async function insertPurchase(
+    supplierIdx: number, date: string, items: { name: string; qty: number; price: number }[],
+  ) {
+    const sup = allSuppliers[supplierIdx % allSuppliers.length];
+    const subtotal = items.reduce((s, i) => s + i.qty * i.price, 0);
+    const vatAmount = Math.round(subtotal * 0.15);
+    const withholding = Math.round(subtotal * 0.02);
+    const total = subtotal + vatAmount;
+
+    const [p] = await db.insert(purchases).values({
+      supplierId: sup.id,
+      fsNumber: `FS-${String(fsCounter++).padStart(5, '0')}`,
+      bankTransactionNumber: `TXN-${date.replace(/-/g, '')}-${fsCounter}`,
+      purchaseDate: date,
+      amountBeforeVat: String(subtotal),
+      vatAmount: String(vatAmount),
+      withholdingAmount: String(withholding),
+      totalAmount: String(total),
+      createdBy: superAdmin.id,
+    }).returning();
+
+    await db.insert(purchaseItems).values(
+      items.map((i) => ({
+        purchaseId: p.id,
+        materialName: i.name,
+        quantity: String(i.qty),
+        unitPrice: String(i.price),
+        lineTotal: String(i.qty * i.price),
+      })),
+    );
+
+    return p;
+  }
+
+  // JAN - Low purchases
+  await insertPurchase(0, '2026-01-10', [
+    { name: 'Ethiopian Mahogany', qty: 10, price: 15000 },
+    { name: 'Matte Lacquer Finish', qty: 5, price: 350 },
+  ]);
+  await insertPurchase(3, '2026-01-22', [
+    { name: 'Stainless Steel Handle', qty: 20, price: 450 },
+  ]);
+
+  // FEB - Low purchases
+  await insertPurchase(1, '2026-02-05', [
+    { name: 'Matte Bronze Aluminum Profile', qty: 30, price: 850 },
+    { name: 'Gold Anodized Aluminum', qty: 15, price: 1200 },
+  ]);
+  await insertPurchase(4, '2026-02-18', [
+    { name: 'Tempered Glass Panel', qty: 10, price: 2200 },
+  ]);
+
+  // MAR - HIGH purchases (stocking up)
+  await insertPurchase(0, '2026-03-03', [
+    { name: 'Ethiopian Mahogany', qty: 50, price: 15000 },
+    { name: 'Teak Wood', qty: 30, price: 25000 },
+    { name: 'Matte Lacquer Finish', qty: 20, price: 350 },
+  ]);
+  await insertPurchase(1, '2026-03-12', [
+    { name: 'Matte Bronze Aluminum Profile', qty: 100, price: 850 },
+    { name: 'Gold Anodized Aluminum', qty: 50, price: 1200 },
+  ]);
+  await insertPurchase(2, '2026-03-20', [
+    { name: 'Teak Wood', qty: 40, price: 25000 },
+  ]);
+  await insertPurchase(3, '2026-03-28', [
+    { name: 'Stainless Steel Handle', qty: 100, price: 450 },
+    { name: 'Tempered Glass Panel', qty: 25, price: 2200 },
+  ]);
+
+  // APR - Medium purchases
+  await insertPurchase(0, '2026-04-08', [
+    { name: 'Ethiopian Mahogany', qty: 20, price: 15000 },
+  ]);
+  await insertPurchase(4, '2026-04-20', [
+    { name: 'Tempered Glass Panel', qty: 15, price: 2200 },
+    { name: 'Stainless Steel Handle', qty: 30, price: 450 },
+  ]);
+  await insertPurchase(1, '2026-04-28', [
+    { name: 'Matte Bronze Aluminum Profile', qty: 40, price: 850 },
+  ]);
+
+  // MAY - Medium purchases
+  await insertPurchase(2, '2026-05-06', [
+    { name: 'Teak Wood', qty: 15, price: 25000 },
+  ]);
+  await insertPurchase(3, '2026-05-20', [
+    { name: 'Stainless Steel Handle', qty: 50, price: 450 },
+    { name: 'Matte Lacquer Finish', qty: 10, price: 350 },
+  ]);
+
+  // JUN - HIGH purchases (mid-year restocking)
+  await insertPurchase(0, '2026-06-02', [
+    { name: 'Ethiopian Mahogany', qty: 60, price: 15000 },
+    { name: 'Teak Wood', qty: 35, price: 25000 },
+  ]);
+  await insertPurchase(1, '2026-06-10', [
+    { name: 'Matte Bronze Aluminum Profile', qty: 80, price: 850 },
+    { name: 'Gold Anodized Aluminum', qty: 40, price: 1200 },
+  ]);
+  await insertPurchase(4, '2026-06-18', [
+    { name: 'Tempered Glass Panel', qty: 30, price: 2200 },
+  ]);
+  await insertPurchase(3, '2026-06-28', [
+    { name: 'Stainless Steel Handle', qty: 80, price: 450 },
+    { name: 'Matte Lacquer Finish', qty: 15, price: 350 },
+  ]);
+
+  // JUL - Low purchases
+  await insertPurchase(2, '2026-07-08', [
+    { name: 'Teak Wood', qty: 8, price: 25000 },
+  ]);
+  await insertPurchase(0, '2026-07-22', [
+    { name: 'Ethiopian Mahogany', qty: 5, price: 15000 },
+  ]);
+
+  // AUG - Low purchases
+  await insertPurchase(1, '2026-08-05', [
+    { name: 'Matte Bronze Aluminum Profile', qty: 20, price: 850 },
+  ]);
+
+  // SEP - Medium purchases
+  await insertPurchase(0, '2026-09-10', [
+    { name: 'Ethiopian Mahogany', qty: 15, price: 15000 },
+    { name: 'Matte Lacquer Finish', qty: 8, price: 350 },
+  ]);
+  await insertPurchase(4, '2026-09-25', [
+    { name: 'Tempered Glass Panel', qty: 12, price: 2200 },
+  ]);
+
+  // OCT - HIGH purchases (pre-holiday stocking)
+  await insertPurchase(0, '2026-10-05', [
+    { name: 'Ethiopian Mahogany', qty: 45, price: 15000 },
+    { name: 'Teak Wood', qty: 25, price: 25000 },
+  ]);
+  await insertPurchase(1, '2026-10-15', [
+    { name: 'Matte Bronze Aluminum Profile', qty: 70, price: 850 },
+    { name: 'Gold Anodized Aluminum', qty: 35, price: 1200 },
+  ]);
+  await insertPurchase(3, '2026-10-28', [
+    { name: 'Stainless Steel Handle', qty: 60, price: 450 },
+    { name: 'Tempered Glass Panel', qty: 20, price: 2200 },
+  ]);
+
+  // NOV - Medium purchases
+  await insertPurchase(2, '2026-11-08', [
+    { name: 'Teak Wood', qty: 12, price: 25000 },
+  ]);
+  await insertPurchase(0, '2026-11-22', [
+    { name: 'Ethiopian Mahogany', qty: 8, price: 15000 },
+    { name: 'Matte Lacquer Finish', qty: 5, price: 350 },
+  ]);
+
+  // DEC - Low purchases
+  await insertPurchase(4, '2026-12-10', [
+    { name: 'Tempered Glass Panel', qty: 5, price: 2200 },
+  ]);
+
+  // ===== PROJECTS (WORK ORDERS) =====
+  // Strategy: HIGH income in Feb, Jul, Nov
+  //           LOW income in Apr, May, Sep
+
+  const allCustomers = [cust1, cust2, cust3, cust4, cust5, cust6];
+  let projCounter = 1;
+
+  async function insertProject(
+    custIdx: number, division: 'furniture' | 'aluminum' | 'interior_design',
+    title: string, description: string, status: string,
+    totalPrice: number, paidNow: number, orderDate: string, deliveryDate: string,
+  ) {
+    const cust = allCustomers[custIdx % allCustomers.length];
+    const vat = Math.round(totalPrice * 0.15 / 1.15);
+    const priceBeforeVat = totalPrice - vat;
+
+    const [p] = await db.insert(projects).values({
+      projectNumber: `KWA-2026-${String(projCounter++).padStart(4, '0')}`,
+      customerId: cust.id,
+      division,
+      title,
+      description,
+      status: status as any,
       priority: 'normal',
-      totalPrice: 120000,
-      paidNowPrice: 30000,
-      orderDate: '2026-01-15',
-      deliveryDate: '2026-02-28',
-      leadEmployeeId: employee1.id,
+      totalPrice,
+      priceBeforeVat: String(priceBeforeVat),
+      vatAmount: String(vat),
+      paidNowPrice: paidNow,
+      orderDate,
+      deliveryDate,
+      leadEmployeeId: [emp1.id, emp2.id, emp3.id][projCounter % 3],
       createdBy: superAdmin.id,
-    })
-    .returning();
+    }).returning();
 
-  const [project2] = await db
-    .insert(projects)
-    .values({
-      projectNumber: 'KWA-2026-0002',
-      customerId: customer2.id,
-      division: 'aluminum',
-      title: 'Aluminum Window Frames',
-      description: '10 aluminum window frames for office renovation',
-      status: 'new',
-      priority: 'urgent',
-      totalPrice: 95000,
-      paidNowPrice: 0,
-      orderDate: '2026-02-01',
-      deliveryDate: '2026-03-15',
-      leadEmployeeId: employee2.id,
-      createdBy: manager.id,
-    })
-    .returning();
+    await db.insert(projectAssignees).values([
+      { projectId: p.id, employeeId: emp1.id },
+      { projectId: p.id, employeeId: [emp1.id, emp2.id, emp3.id][projCounter % 3] },
+    ]);
 
-  const [project3] = await db
-    .insert(projects)
-    .values({
-      projectNumber: 'KWA-2026-0003',
-      customerId: customer1.id,
-      division: 'interior_design',
-      title: 'Living Room Interior Redesign',
-      description: 'Complete living room redesign with custom furniture',
-      status: 'completed',
-      priority: 'vip',
-      totalPrice: 185000,
-      paidNowPrice: 185000,
-      orderDate: '2025-12-01',
-      deliveryDate: '2026-01-31',
-      completedAt: new Date('2026-01-28'),
-      leadEmployeeId: employee3.id,
-      createdBy: superAdmin.id,
-    })
-    .returning();
+    return p;
+  }
 
-  const [project4] = await db
-    .insert(projects)
-    .values({
-      projectNumber: 'KWA-2026-0004',
-      customerId: customer3.id,
-      division: 'furniture',
-      title: 'Bedroom Wardrobe Set',
-      description: 'Custom teak wardrobe with mirror panels',
-      status: 'in_progress',
-      priority: 'urgent',
-      totalPrice: 185000,
-      paidNowPrice: 50000,
-      orderDate: '2026-03-10',
-      deliveryDate: '2026-04-15',
-      leadEmployeeId: employee1.id,
-      createdBy: manager.id,
-    })
-    .returning();
+  async function insertInvoice(
+    custIdx: number, project: any, number: string, date: string,
+    items: { desc: string; qty: number; price: number }[],
+  ) {
+    const subtotal = items.reduce((s, i) => s + i.qty * i.price, 0);
+    const vat = Math.round(subtotal * 0.15);
+    const total = subtotal + vat;
 
-  // --- Project Assignees ---
-  await db.insert(projectAssignees).values([
-    { projectId: project1.id, employeeId: employee1.id },
-    { projectId: project1.id, employeeId: employee3.id },
-    { projectId: project2.id, employeeId: employee2.id },
-    { projectId: project3.id, employeeId: employee3.id },
-    { projectId: project4.id, employeeId: employee1.id },
-    { projectId: project4.id, employeeId: employee2.id },
-  ]);
-
-  // --- Project Status History ---
-  await db.insert(projectStatusHistory).values([
-    { projectId: project1.id, oldStatus: 'new', newStatus: 'in_progress', changedBy: manager.id, notes: 'Work started on dining table' },
-    { projectId: project2.id, oldStatus: null, newStatus: 'new', changedBy: manager.id, notes: 'Order received' },
-    { projectId: project3.id, oldStatus: 'new', newStatus: 'in_progress', changedBy: superAdmin.id, notes: 'Design phase started' },
-    { projectId: project3.id, oldStatus: 'in_progress', newStatus: 'completed', changedBy: employee3.id, notes: 'All work completed' },
-    { projectId: project4.id, oldStatus: null, newStatus: 'new', changedBy: manager.id, notes: 'Wardrobe order placed' },
-    { projectId: project4.id, oldStatus: 'new', newStatus: 'in_progress', changedBy: employee1.id, notes: 'Material procurement started' },
-  ]);
-
-  // --- Project Attachments ---
-  await db.insert(projectAttachments).values([
-    { projectId: project1.id, fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/design1.jpg', fileType: 'drawing', caption: 'Initial design sketch', uploadedBy: employee3.id },
-    { projectId: project1.id, fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/progress1.jpg', fileType: 'progress_photo', caption: 'Frame assembly in progress', uploadedBy: employee1.id },
-    { projectId: project2.id, fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/measurement.pdf', fileType: 'document', caption: 'Window measurements', uploadedBy: employee2.id },
-    { projectId: project3.id, fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/final1.jpg', fileType: 'completion_photo', caption: 'Completed living room', uploadedBy: employee3.id },
-    { projectId: project4.id, fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/wardrobe-design.jpg', fileType: 'photo', caption: 'Wardrobe reference photo', uploadedBy: employee1.id },
-  ]);
-
-  // --- Project Materials ---
-  await db.insert(projectMaterials).values([
-    { projectId: project1.id, materialId: matMahogany.id, quantity: '20', clientApproved: true },
-    { projectId: project1.id, materialId: matMatteFinish.id, quantity: '2', clientApproved: true },
-    { projectId: project1.id, materialId: matHandle.id, quantity: '12', clientApproved: true },
-    { projectId: project2.id, materialId: matMatte.id, quantity: '50', clientApproved: false },
-    { projectId: project2.id, materialId: matGold.id, quantity: '10', clientApproved: false },
-    { projectId: project2.id, materialId: matGlass.id, quantity: '15', clientApproved: false },
-    { projectId: project4.id, materialId: matTeak.id, quantity: '30', clientApproved: true },
-    { projectId: project4.id, materialId: matGlass.id, quantity: '4', clientApproved: true },
-    { projectId: project4.id, materialId: matHandle.id, quantity: '8', clientApproved: true },
-  ]);
-
-  // --- Project Payments ---
-  await db.insert(projectPayments).values([
-    { projectId: project1.id, amount: 30000, method: 'bank_transfer', note: 'Upfront deposit', recordedBy: superAdmin.id },
-    { projectId: project3.id, amount: 185000, method: 'bank_transfer', note: 'Full payment', recordedBy: superAdmin.id },
-    { projectId: project4.id, amount: 50000, method: 'telebirr', note: 'Down payment', recordedBy: manager.id },
-    { projectId: project4.id, amount: 20000, method: 'cash', note: 'Second installment', recordedBy: manager.id },
-  ]);
-
-  // --- Invoices ---
-  const [invoice1] = await db
-    .insert(invoices)
-    .values({
-      invoiceNumber: 'INV-2026-0001',
-      projectId: project3.id,
-      customerId: customer1.id,
-      subtotal: '185000',
+    const [inv] = await db.insert(invoices).values({
+      invoiceNumber: number,
+      projectId: project.id,
+      customerId: allCustomers[custIdx % allCustomers.length].id,
+      subtotal: String(subtotal),
       vatRate: '15',
-      vatAmount: '27750',
-      totalAmount: '212750',
-      paymentStatus: 'paid',
+      vatAmount: String(vat),
+      totalAmount: String(total),
+      paymentStatus: total <= project.paidNowPrice ? 'paid' : 'partial',
       createdBy: superAdmin.id,
-    })
-    .returning();
+    }).returning();
 
-  const [invoice2] = await db
-    .insert(invoices)
-    .values({
-      invoiceNumber: 'INV-2026-0002',
-      projectId: project1.id,
-      customerId: customer1.id,
-      subtotal: '120000',
-      discountAmount: '5000',
-      vatRate: '15',
-      vatAmount: '17250',
-      totalAmount: '132250',
-      paymentStatus: 'partial',
-      createdBy: manager.id,
-    })
-    .returning();
+    await db.insert(invoiceItems).values(
+      items.map((i) => ({
+        invoiceId: inv.id,
+        description: i.desc,
+        quantity: String(i.qty),
+        unitPrice: String(i.price),
+        total: String(i.qty * i.price),
+      })),
+    );
 
-  const [invoice3] = await db
-    .insert(invoices)
-    .values({
-      invoiceNumber: 'INV-2026-0003',
-      projectId: project2.id,
-      customerId: customer2.id,
-      subtotal: '95000',
-      vatRate: '15',
-      vatAmount: '14250',
-      totalAmount: '109250',
-      paymentStatus: 'unpaid',
-      createdBy: superAdmin.id,
-    })
-    .returning();
+    if (total <= project.paidNowPrice) {
+      await db.insert(payments).values({
+        invoiceId: inv.id,
+        amount: String(total),
+        method: 'bank_transfer',
+        referenceNumber: `PAY-${number}`,
+        paidAt: new Date(date),
+        verifiedBy: superAdmin.id,
+        verifiedAt: new Date(date),
+      });
+    }
 
-  // --- Invoice Items ---
-  await db.insert(invoiceItems).values([
-    { invoiceId: invoice1.id, description: 'Living Room Sofa Set', quantity: '1', unitPrice: '85000', total: '85000' },
-    { invoiceId: invoice1.id, description: 'Coffee Table', quantity: '1', unitPrice: '35000', total: '35000' },
-    { invoiceId: invoice1.id, description: 'TV Console', quantity: '1', unitPrice: '45000', total: '45000' },
-    { invoiceId: invoice1.id, description: 'Interior Design Fee', quantity: '1', unitPrice: '20000', total: '20000' },
-    { invoiceId: invoice2.id, description: 'Mahogany Dining Table (6-seater)', quantity: '1', unitPrice: '75000', total: '75000' },
-    { invoiceId: invoice2.id, description: 'Dining Chair', quantity: '6', unitPrice: '7500', total: '45000' },
-    { invoiceId: invoice3.id, description: 'Aluminum Window Frame (standard)', quantity: '8', unitPrice: '8500', total: '68000' },
-    { invoiceId: invoice3.id, description: 'Aluminum Window Frame (large)', quantity: '2', unitPrice: '13500', total: '27000' },
+    return inv;
+  }
+
+  // JAN - Medium income
+  const janP1 = await insertProject(0, 'furniture', 'Custom Dining Table Set',
+    'Mahogany 6-seater dining table with chairs', 'completed',
+    120000, 120000, '2026-01-10', '2026-02-15');
+  await insertInvoice(0, janP1, 'INV-2026-0001', '2026-01-15', [
+    { desc: 'Mahogany Dining Table', qty: 1, price: 75000 },
+    { desc: 'Dining Chairs', qty: 6, price: 7500 },
   ]);
 
-  // --- Payments ---
-  await db.insert(payments).values([
-    { invoiceId: invoice1.id, amount: '212750', method: 'bank_transfer', referenceNumber: 'TXN-20260128-001', paidAt: new Date('2026-01-28T10:30:00'), verifiedBy: superAdmin.id, verifiedAt: new Date('2026-01-28T14:00:00') },
-    { invoiceId: invoice2.id, amount: '70000', method: 'telebirr', referenceNumber: 'TB-20260215-002', paidAt: new Date('2026-02-15T09:00:00'), verifiedBy: manager.id, verifiedAt: new Date('2026-02-15T11:30:00') },
-    { invoiceId: invoice2.id, amount: '30000', method: 'cash', paidAt: new Date('2026-03-01T16:00:00'), verifiedBy: manager.id, verifiedAt: new Date('2026-03-01T16:30:00') },
+  const janP2 = await insertProject(1, 'aluminum', 'Aluminum Door Frames',
+    '3 aluminum door frames for office', 'completed',
+    85000, 85000, '2026-01-18', '2026-02-20');
+  await insertInvoice(1, janP2, 'INV-2026-0002', '2026-01-20', [
+    { desc: 'Aluminum Door Frame', qty: 3, price: 28333 },
   ]);
 
-  // --- Testimonials ---
-  await db.insert(testimonials).values([
-    { customerName: 'Ato Tesfaye Abate', projectId: project3.id, rating: 5, reviewText: 'Excellent work! The team transformed our living room completely. Highly recommended.', isFeatured: true, isApproved: true },
-    { customerName: 'W/ro Hiwot Dagne', rating: 4, reviewText: 'Good quality aluminum work. Delivery was on time. Will order again.', isFeatured: false, isApproved: true },
-    { customerName: 'Ato Daniel Mulugeta', rating: 5, reviewText: 'Very professional team. The dining set exceeded our expectations.', isFeatured: true, isApproved: true },
+  // FEB - HIGH income
+  const febP1 = await insertProject(2, 'interior_design', 'Office Interior Redesign',
+    'Complete office interior with custom furniture', 'completed',
+    250000, 250000, '2026-02-01', '2026-03-15');
+  await insertInvoice(2, febP1, 'INV-2026-0003', '2026-02-05', [
+    { desc: 'Office Desk Set', qty: 10, price: 15000 },
+    { desc: 'Conference Table', qty: 1, price: 45000 },
+    { desc: 'Reception Counter', qty: 1, price: 55000 },
   ]);
 
-  // --- Gallery Images ---
-  await db.insert(galleryImages).values([
-    { title: 'Mahogany Dining Set', division: 'furniture', projectId: project1.id, imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/sample.jpg', roomType: 'dining_room', isFeatured: true },
-    { title: 'Aluminum Window Installation', division: 'aluminum', projectId: project2.id, imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/sample2.jpg', roomType: 'office', isFeatured: false },
-    { title: 'Teak Bedroom Wardrobe', division: 'furniture', projectId: project4.id, imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/wardrobe.jpg', roomType: 'bedroom', isFeatured: true },
-    { title: 'Custom Coffee Table', division: 'furniture', projectId: project1.id, imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/coffee.jpg', roomType: 'living_room', isFeatured: false },
-    { title: 'Office Aluminum Partitions', division: 'aluminum', imageUrl: 'https://res.cloudinary.com/demo/image/upload/v1/partition.jpg', roomType: 'office', isFeatured: true },
+  const febP2 = await insertProject(0, 'furniture', 'Kitchen Cabinet Set',
+    'Custom mahogany kitchen cabinets', 'completed',
+    180000, 180000, '2026-02-10', '2026-03-20');
+  await insertInvoice(0, febP2, 'INV-2026-0004', '2026-02-12', [
+    { desc: 'Upper Cabinets', qty: 1, price: 65000 },
+    { desc: 'Lower Cabinets', qty: 1, price: 75000 },
+    { desc: 'Countertop', qty: 1, price: 40000 },
   ]);
 
-  // --- Products ---
-  await db.insert(products).values([
-    { name: 'Custom Mahogany Dining Table', division: 'furniture', category: 'Tables', description: 'Handcrafted mahogany dining table, seats 6-8', materialId: matMahogany.id, price: '117500', mainImage: 'https://res.cloudinary.com/demo/image/upload/v1/dining.jpg', featureImages: [] },
-    { name: 'Aluminum Sliding Windows', division: 'aluminum', category: 'Windows', description: 'Durable aluminum sliding windows with double glazing', materialId: matMatte.id, price: '8500', mainImage: 'https://res.cloudinary.com/demo/image/upload/v1/window.jpg', featureImages: [] },
-    { name: 'Teak Bedroom Wardrobe', division: 'furniture', category: 'Storage', description: 'Spacious teak wardrobe with mirror panels', materialId: matTeak.id, price: '185000', mainImage: 'https://res.cloudinary.com/demo/image/upload/v1/wardrobe-prod.jpg', featureImages: [] },
-    { name: 'Aluminum Cabinet Doors', division: 'aluminum', category: 'Cabinets', description: 'Sleek aluminum-framed cabinet doors with glass panels', materialId: matMatte.id, price: '13000', mainImage: 'https://res.cloudinary.com/demo/image/upload/v1/cabinet.jpg', featureImages: [] },
-    { name: 'Living Room Sofa Set', division: 'furniture', category: 'Seating', description: 'Premium fabric sofa set, 3+2+1 configuration', materialId: matMahogany.id, price: '102500', mainImage: 'https://res.cloudinary.com/demo/image/upload/v1/sofa.jpg', featureImages: [] },
+  const febP3 = await insertProject(3, 'aluminum', 'Aluminum Window Frames',
+    '10 aluminum window frames', 'completed',
+    150000, 100000, '2026-02-15', '2026-03-25');
+  await insertInvoice(3, febP3, 'INV-2026-0005', '2026-02-18', [
+    { desc: 'Aluminum Window Frame (standard)', qty: 7, price: 15000 },
+    { desc: 'Aluminum Window Frame (large)', qty: 3, price: 15000 },
   ]);
 
-  // --- FAQs ---
-  await db.insert(faqs).values([
-    { question: 'How long does a custom furniture order take?', answer: 'Typically 2-4 weeks depending on complexity and materials.', sortOrder: 1 },
-    { question: 'Do you offer warranty?', answer: 'Yes, all our furniture comes with a 2-year workmanship warranty.', sortOrder: 2 },
-    { question: 'Can I visit your workshop?', answer: 'Absolutely! We welcome visits. Please call ahead to schedule.', sortOrder: 3 },
-    { question: 'What payment methods do you accept?', answer: 'We accept cash, bank transfer, Telebirr, and CBE Birr.', sortOrder: 4 },
-    { question: 'Do you deliver outside Addis Ababa?', answer: 'Yes, we deliver nationwide. Delivery fees vary by location.', sortOrder: 5 },
+  // MAR - Medium income
+  const marP1 = await insertProject(4, 'furniture', 'Bedroom Wardrobe Set',
+    'Custom teak wardrobe with mirror panels', 'completed',
+    160000, 160000, '2026-03-05', '2026-04-10');
+  await insertInvoice(4, marP1, 'INV-2026-0006', '2026-03-08', [
+    { desc: 'Teak Wardrobe', qty: 1, price: 95000 },
+    { desc: 'Dressing Table', qty: 1, price: 35000 },
+    { desc: 'Bedside Tables', qty: 2, price: 15000 },
   ]);
 
-  // --- Notifications ---
-  await db.insert(notifications).values([
-    { userId: employee1.id, title: 'Job Assigned', body: 'You have been assigned to project KWA-2026-0001', type: 'job_assigned', relatedProjectId: project1.id },
-    { userId: employee2.id, title: 'Job Assigned', body: 'You have been assigned to project KWA-2026-0002', type: 'job_assigned', relatedProjectId: project2.id },
-    { userId: employee3.id, title: 'Job Completed', body: 'Project KWA-2026-0003 has been marked as completed', type: 'job_completed', relatedProjectId: project3.id },
-    { userId: manager.id, title: 'Payment Received', body: 'Payment verified for INV-2026-0001', type: 'payment_verified', relatedProjectId: project3.id },
-    { userId: employee1.id, title: 'Status Changed', body: 'Project KWA-2026-0004 status changed to in_progress', type: 'status_changed', relatedProjectId: project4.id },
-    { userId: superAdmin.id, title: 'Overdue Invoice', body: 'INV-2026-0003 is overdue', type: 'overdue', relatedProjectId: project2.id },
+  const marP2 = await insertProject(5, 'aluminum', 'Aluminum Partition Walls',
+    'Office partition walls with glass panels', 'completed',
+    95000, 95000, '2026-03-15', '2026-04-15');
+  await insertInvoice(5, marP2, 'INV-2026-0007', '2026-03-18', [
+    { desc: 'Aluminum Partition Wall', qty: 5, price: 19000 },
   ]);
 
-  // --- Contact Messages ---
-  await db.insert(contactMessages).values([
-    { name: 'Ato Samuel Getachew', email: 'samuel@gmail.com', phone: '+251911222333', message: 'I am interested in custom kitchen cabinets. Please contact me.', status: 'new' },
-    { name: 'W/ro Martha Tekle', phone: '+251922333444', message: 'Do you repair aluminum windows? I have a broken frame.', status: 'read' },
-    { name: 'Ato Yonas Berhanu', email: 'yonas@company.com', phone: '+251933444555', message: 'Looking for office furniture for our new branch in Bole.', status: 'replied' },
+  // APR - Low income
+  const aprP1 = await insertProject(0, 'furniture', 'Side Table Set',
+    'Simple mahogany side tables', 'completed',
+    65000, 65000, '2026-04-01', '2026-04-20');
+  await insertInvoice(0, aprP1, 'INV-2026-0008', '2026-04-03', [
+    { desc: 'Side Table', qty: 3, price: 21666 },
   ]);
 
-  // --- Quote Requests ---
-  await db.insert(quoteRequests).values([
-    { name: 'Ato Samuel Getachew', email: 'samuel@gmail.com', phone: '+251911222333', division: 'furniture', description: 'Custom kitchen cabinets for 3-room apartment', budgetRange: '100000-200000', status: 'new' },
-    { name: 'W/ro Martha Tekle', phone: '+251922333444', division: 'aluminum', description: 'Replace 5 broken aluminum window frames', budgetRange: '30000-50000', status: 'read' },
-    { name: 'Ato Yonas Berhanu', email: 'yonas@company.com', phone: '+251933444555', division: 'furniture', description: 'Office desks and chairs for 20 employees', budgetRange: '200000-300000', status: 'new' },
+  // MAY - Low income
+  const mayP1 = await insertProject(1, 'aluminum', 'Small Aluminum Frames',
+    '4 small aluminum frames', 'completed',
+    55000, 55000, '2026-05-05', '2026-05-25');
+  await insertInvoice(1, mayP1, 'INV-2026-0009', '2026-05-08', [
+    { desc: 'Aluminum Frame (small)', qty: 4, price: 13750 },
   ]);
 
-  // --- Audit Logs ---
-  await db.insert(auditLogs).values([
-    { userId: superAdmin.id, action: 'create', entityType: 'user', entityId: manager.id, metadata: { role: 'manager' } },
-    { userId: manager.id, action: 'create', entityType: 'project', entityId: project2.id, metadata: { projectNumber: 'KWA-2026-0002' } },
-    { userId: superAdmin.id, action: 'create', entityType: 'invoice', entityId: invoice1.id, metadata: { invoiceNumber: 'INV-2026-0001', total: '212750' } },
-    { userId: superAdmin.id, action: 'verify_payment', entityType: 'payment', entityId: invoice1.id, metadata: { method: 'bank_transfer', amount: '212750' } },
-    { userId: employee3.id, action: 'update_status', entityType: 'project', entityId: project3.id, metadata: { oldStatus: 'in_progress', newStatus: 'completed' } },
+  // JUN - Medium income
+  const junP1 = await insertProject(2, 'interior_design', 'Restaurant Interior',
+    'Restaurant dining area design and furniture', 'completed',
+    120000, 80000, '2026-06-01', '2026-07-10');
+  await insertInvoice(2, junP1, 'INV-2026-0010', '2026-06-05', [
+    { desc: 'Dining Tables', qty: 8, price: 10000 },
+    { desc: 'Chairs', qty: 32, price: 2500 },
+  ]);
+
+  const junP2 = await insertProject(3, 'furniture', 'Living Room Set',
+    'Complete living room furniture set', 'completed',
+    110000, 110000, '2026-06-15', '2026-07-20');
+  await insertInvoice(3, junP2, 'INV-2026-0011', '2026-06-18', [
+    { desc: 'Sofa Set', qty: 1, price: 65000 },
+    { desc: 'TV Console', qty: 1, price: 25000 },
+    { desc: 'Coffee Table', qty: 1, price: 20000 },
+  ]);
+
+  // JUL - HIGH income
+  const julP1 = await insertProject(4, 'furniture', 'Hotel Furniture Order',
+    '50 hotel room furniture sets', 'completed',
+    350000, 200000, '2026-07-01', '2026-08-30');
+  await insertInvoice(4, julP1, 'INV-2026-0012', '2026-07-05', [
+    { desc: 'Hotel Bed Frame', qty: 50, price: 4000 },
+    { desc: 'Hotel Wardrobe', qty: 50, price: 2500 },
+    { desc: 'Hotel Desk', qty: 50, price: 1000 },
+  ]);
+
+  const julP2 = await insertProject(5, 'aluminum', 'Aluminum Facade System',
+    'Aluminum facade for commercial building', 'completed',
+    280000, 150000, '2026-07-08', '2026-08-25');
+  await insertInvoice(5, julP2, 'INV-2026-0013', '2026-07-12', [
+    { desc: 'Aluminum Facade Panel', qty: 100, price: 2800 },
+  ]);
+
+  const julP3 = await insertProject(0, 'interior_design', 'Showroom Design',
+    'Full showroom interior design', 'completed',
+    180000, 180000, '2026-07-15', '2026-08-20');
+  await insertInvoice(0, julP3, 'INV-2026-0014', '2026-07-18', [
+    { desc: 'Display Units', qty: 6, price: 20000 },
+    { desc: 'Lighting Fixtures', qty: 1, price: 30000 },
+    { desc: 'Flooring', qty: 1, price: 70000 },
+  ]);
+
+  // AUG - Medium income
+  const augP1 = await insertProject(1, 'furniture', 'Office Desk Order',
+    '20 custom office desks', 'completed',
+    100000, 100000, '2026-08-01', '2026-08-25');
+  await insertInvoice(1, augP1, 'INV-2026-0015', '2026-08-05', [
+    { desc: 'Office Desk', qty: 20, price: 5000 },
+  ]);
+
+  const augP2 = await insertProject(2, 'aluminum', 'Security Doors',
+    'Aluminum security doors', 'completed',
+    75000, 75000, '2026-08-10', '2026-09-05');
+  await insertInvoice(2, augP2, 'INV-2026-0016', '2026-08-13', [
+    { desc: 'Aluminum Security Door', qty: 3, price: 25000 },
+  ]);
+
+  // SEP - Low income
+  const sepP1 = await insertProject(3, 'furniture', 'Shoe Rack',
+    'Custom mahogany shoe rack', 'completed',
+    45000, 45000, '2026-09-05', '2026-09-25');
+  await insertInvoice(3, sepP1, 'INV-2026-0017', '2026-09-08', [
+    { desc: 'Shoe Rack', qty: 1, price: 45000 },
+  ]);
+
+  // OCT - Medium income
+  const octP1 = await insertProject(4, 'interior_design', 'Bank Branch Interior',
+    'Bank branch complete interior', 'completed',
+    140000, 140000, '2026-10-01', '2026-11-10');
+  await insertInvoice(4, octP1, 'INV-2026-0018', '2026-10-05', [
+    { desc: 'Counter Desk', qty: 4, price: 20000 },
+    { desc: 'Waiting Area Seating', qty: 10, price: 6000 },
+  ]);
+
+  const octP2 = await insertProject(5, 'furniture', 'Conference Table',
+    'Large mahogany conference table', 'completed',
+    90000, 90000, '2026-10-12', '2026-11-05');
+  await insertInvoice(5, octP2, 'INV-2026-0019', '2026-10-15', [
+    { desc: 'Conference Table', qty: 1, price: 70000 },
+    { desc: 'Executive Chairs', qty: 8, price: 2500 },
+  ]);
+
+  // NOV - HIGH income
+  const novP1 = await insertProject(0, 'furniture', 'Furniture Export Order',
+    'Large furniture export order', 'completed',
+    220000, 120000, '2026-11-01', '2026-12-15');
+  await insertInvoice(0, novP1, 'INV-2026-0020', '2026-11-05', [
+    { desc: 'Dining Set', qty: 5, price: 30000 },
+    { desc: 'Coffee Table', qty: 5, price: 14000 },
+  ]);
+
+  const novP2 = await insertProject(1, 'aluminum', 'Aluminum Storefront',
+    'Full aluminum storefront for retail shop', 'completed',
+    170000, 170000, '2026-11-08', '2026-12-10');
+  await insertInvoice(1, novP2, 'INV-2026-0021', '2026-11-12', [
+    { desc: 'Storefront Frame', qty: 1, price: 100000 },
+    { desc: 'Glass Panels', qty: 10, price: 7000 },
+  ]);
+
+  const novP3 = await insertProject(2, 'interior_design', 'Villa Interior',
+    'Luxury villa interior design and furniture', 'completed',
+    300000, 150000, '2026-11-15', '2026-12-20');
+  await insertInvoice(2, novP3, 'INV-2026-0022', '2026-11-18', [
+    { desc: 'Living Room Set', qty: 1, price: 120000 },
+    { desc: 'Bedroom Set', qty: 3, price: 40000 },
+    { desc: 'Dining Set', qty: 1, price: 100000 },
+  ]);
+
+  // DEC - Medium income
+  const decP1 = await insertProject(3, 'furniture', 'Year-End Office Furniture',
+    'Office furniture refresh order', 'completed',
+    85000, 85000, '2026-12-01', '2026-12-20');
+  await insertInvoice(3, decP1, 'INV-2026-0023', '2026-12-05', [
+    { desc: 'Office Chair', qty: 15, price: 4000 },
+    { desc: 'Filing Cabinet', qty: 5, price: 5000 },
+  ]);
+
+  const decP2 = await insertProject(4, 'aluminum', 'Window Replacement',
+    'Replace old windows with aluminum frames', 'completed',
+    70000, 70000, '2026-12-08', '2026-12-28');
+  await insertInvoice(4, decP2, 'INV-2026-0024', '2026-12-12', [
+    { desc: 'Aluminum Window Frame', qty: 7, price: 10000 },
   ]);
 
   // --- Company Settings ---
@@ -493,11 +728,14 @@ async function seed() {
     { key: 'vat_rate', value: '15' },
     { key: 'company_name', value: 'Kassahun Wood and Aluminum Work' },
     { key: 'company_phone', value: '+251911000000' },
+    { key: 'company_email', value: 'info@kassahun.com' },
     { key: 'company_address', value: 'Addis Ababa, Ethiopia' },
     { key: 'company_tin', value: '0012345678' },
     { key: 'currency', value: 'ETB' },
-    { key: 'logo_url', value: 'https://res.cloudinary.com/demo/image/upload/v1/logo.png' },
-    { key: 'working_hours', value: 'Mon-Sat 8:00AM - 6:00PM' },
+    { key: 'signatory_name', value: 'Kassahun Owner' },
+    { key: 'bank_name', value: 'Commercial Bank of Ethiopia' },
+    { key: 'bank_account_number', value: '1000200030004' },
+    { key: 'bank_account_name', value: 'Kassahun Wood and Aluminum Work PLC' },
   ]);
 
   console.log('Seed completed successfully!');
@@ -507,6 +745,20 @@ async function seed() {
   console.log('Employee 1:  +251911000003 / password123');
   console.log('Employee 2:  +251911000004 / password123');
   console.log('Employee 3:  +251911000005 / password123');
+  console.log('');
+  console.log('--- Data Summary ---');
+  console.log('5 Suppliers, 6 Customers');
+  console.log('24 Projects across Jan-Dec');
+  console.log('24 Purchases across Jan-Dec');
+  console.log('');
+  console.log('--- Purchase Pattern (VAT Input) ---');
+  console.log('HIGH: Mar, Jun, Oct (stocking months)');
+  console.log('LOW:  Jan, Jul, Aug, Dec');
+  console.log('');
+  console.log('--- Work Project Pattern (VAT Output) ---');
+  console.log('HIGH: Feb, Jul, Nov');
+  console.log('LOW:  Apr, May, Sep');
+
   await client.end();
   process.exit(0);
 }

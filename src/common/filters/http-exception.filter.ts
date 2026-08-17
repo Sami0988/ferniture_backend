@@ -20,14 +20,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
+    let errors: any = undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exResponse = exception.getResponse();
-      message =
-        typeof exResponse === 'string'
-          ? exResponse
-          : (exResponse as any).message || exception.message;
+      if (typeof exResponse === 'string') {
+        message = exResponse;
+      } else {
+        const resp = exResponse as any;
+        message = resp.message || exception.message;
+        errors = resp.errors;
+      }
     }
 
     Sentry.captureException(exception);
@@ -37,11 +41,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : '',
     );
 
-    response.status(status).json({
+    const responseBody: any = {
       statusCode: status,
       message,
       timestamp: new Date().toISOString(),
       path: request.url,
-    });
+    };
+
+    if (errors) {
+      responseBody.errors = errors;
+    }
+
+    response.status(status).json(responseBody);
   }
 }

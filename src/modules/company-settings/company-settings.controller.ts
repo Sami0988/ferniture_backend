@@ -17,18 +17,21 @@ export class CompanySettingsController {
   constructor(private readonly service: CompanySettingsService) {}
 
   @Get()
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get all company settings' })
   findAll() {
     return this.service.findAll();
   }
 
   @Get('company-info')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get company info for invoices' })
   getCompanyInfo() {
     return this.service.getCompanyInfo();
   }
 
   @Get(':key')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get setting by key' })
   findByKey(@Param('key') key: string) {
     return this.service.findByKey(key);

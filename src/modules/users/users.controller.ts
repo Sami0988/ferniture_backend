@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UsersService } from './users.service';
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
 @ApiTags('Users')
@@ -34,14 +35,14 @@ export class UsersController {
   @Post()
   @Roles('super_admin')
   @ApiOperation({ summary: 'Create a new user' })
-  create(@Body() dto: any) {
+  create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
 
   @Put(':id')
   @Roles('super_admin')
   @ApiOperation({ summary: 'Update user' })
-  update(@Param('id') id: string, @Body() dto: any) {
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
   }
 

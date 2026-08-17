@@ -27,18 +27,21 @@ export class InvoicesController {
   }
 
   @Get(':id')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get invoice by ID' })
   findOne(@Param('id') id: string) {
     return this.invoicesService.findById(id);
   }
 
   @Get(':id/payments')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get payments for an invoice' })
   getPayments(@Param('id') id: string) {
     return this.invoicesService.getPayments(id);
   }
 
   @Get(':id/pdf')
+  @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Download invoice PDF' })
   async generatePdf(@Param('id') id: string, @Res() res: Response) {
     const pdfBuffer = await this.invoicesService.generatePdfBuffer(id);

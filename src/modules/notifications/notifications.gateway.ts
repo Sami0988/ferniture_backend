@@ -17,7 +17,12 @@ interface AuthenticatedSocket extends Socket {
 }
 
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: {
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+      : false,
+    credentials: true,
+  },
   namespace: '/notifications',
 })
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -71,7 +76,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() room: string,
   ) {
-    client.join(room);
+    const allowedRooms = [`user:${client.userId}`];
+    if (client.userRole && ['super_admin', 'manager'].includes(client.userRole)) {
+      allowedRooms.push('admins');
+    }
+    if (allowedRooms.includes(room)) {
+      client.join(room);
+    }
   }
 
   @SubscribeMessage('leave')
@@ -79,7 +90,13 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() room: string,
   ) {
-    client.leave(room);
+    const allowedRooms = [`user:${client.userId}`];
+    if (client.userRole && ['super_admin', 'manager'].includes(client.userRole)) {
+      allowedRooms.push('admins');
+    }
+    if (allowedRooms.includes(room)) {
+      client.leave(room);
+    }
   }
 
   // Called by services to broadcast events

@@ -1,5 +1,20 @@
-import { IsString, IsNotEmpty, IsOptional, MinLength, IsEnum, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MinLength, IsEnum, Matches, Validate } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+const PASSWORD_MIN_LENGTH = 8;
+
+export class PasswordStrengthValidator {
+  validate(password: string) {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    return hasUpperCase && hasLowerCase && hasNumber;
+  }
+
+  defaultMessage() {
+    return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+  }
+}
 
 export class LoginDto {
   @ApiPropertyOptional({ example: '+251911234567' })
@@ -35,9 +50,10 @@ export class RegisterDto {
   @IsString()
   email?: string;
 
-  @ApiProperty({ example: 'password123' })
+  @ApiProperty({ example: 'Password123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(PASSWORD_MIN_LENGTH, { message: 'Password must be at least 8 characters' })
+  @Validate(PasswordStrengthValidator)
   password: string;
 
   @ApiPropertyOptional({ example: 'carpenter' })
@@ -105,14 +121,15 @@ export class MfaRegenerateWithUserDto extends MfaRegenerateDto {}
 export class MfaDisableWithUserDto extends MfaDisableDto {}
 
 export class ChangePasswordDto {
-  @ApiProperty({ example: 'newpassword123' })
+  @ApiProperty({ example: 'NewPassword123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(PASSWORD_MIN_LENGTH, { message: 'Password must be at least 8 characters' })
+  @Validate(PasswordStrengthValidator)
   newPassword: string;
 
-  @ApiProperty({ example: 'newpassword123' })
+  @ApiProperty({ example: 'NewPassword123' })
   @IsString()
-  @MinLength(6)
+  @MinLength(PASSWORD_MIN_LENGTH, { message: 'Password must be at least 8 characters' })
   confirmPassword: string;
 }
 

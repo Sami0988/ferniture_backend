@@ -3,6 +3,7 @@ import { ProjectsRepository } from './projects.repository';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UploadsService } from '../uploads/uploads.service';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
+import { calculateProjectTax } from '../tax/tax-calculation.util';
 
 @Injectable()
 export class ProjectsService {
@@ -28,6 +29,13 @@ export class ProjectsService {
     if (files?.coverImage?.[0]) {
       const result = await this.uploadsService.uploadImage(files.coverImage[0], 'kassahun/projects/cover');
       data.coverImage = result.url;
+    }
+
+    if (data.priceBeforeVat !== undefined && data.priceBeforeVat !== null) {
+      const { vatAmount, totalPrice } = calculateProjectTax(data.priceBeforeVat);
+      data.priceBeforeVat = String(data.priceBeforeVat);
+      data.vatAmount = String(vatAmount);
+      data.totalPrice = String(totalPrice);
     }
 
     const maxRetries = 5;
@@ -73,6 +81,13 @@ export class ProjectsService {
     if (files?.coverImage?.[0]) {
       const result = await this.uploadsService.uploadImage(files.coverImage[0], 'kassahun/projects/cover');
       data.coverImage = result.url;
+    }
+
+    if (data.priceBeforeVat !== undefined && data.priceBeforeVat !== null) {
+      const { vatAmount, totalPrice } = calculateProjectTax(data.priceBeforeVat);
+      data.priceBeforeVat = String(data.priceBeforeVat);
+      data.vatAmount = String(vatAmount);
+      data.totalPrice = String(totalPrice);
     }
 
     return this.repo.update(id, data, assigneeIds);
