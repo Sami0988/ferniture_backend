@@ -23,6 +23,7 @@ export const projects = pgTable(
     deliveryDate: date('delivery_date'),
     completedAt: timestamp('completed_at'),
     deliveredAt: timestamp('delivered_at'),
+    paidAt: timestamp('paid_at'),
     branchName: varchar('branch_name', { length: 200 }),
     city: varchar('city', { length: 100 }),
     leadEmployeeId: uuid('lead_employee_id').references(() => users.id),

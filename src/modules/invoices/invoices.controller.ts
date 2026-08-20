@@ -9,6 +9,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto, CreatePaymentDto, InvoiceQueryDto } from './dto/invoice.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { convertInputDates, convertDatesInArray, convertDatesInObject } from '../../common/utils/date-converter.util';
 
 @ApiTags('Invoices')
 @ApiBearerAuth()
@@ -29,15 +30,31 @@ export class InvoicesController {
   @Get(':id')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get invoice by ID' })
-  findOne(@Param('id') id: string) {
-    return this.invoicesService.findById(id);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
+  async findOne(
+    @Param('id') id: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const result = await this.invoicesService.findById(id);
+    if (calendar === 'ec' && result) {
+      return convertDatesInObject(result, calendar, ['createdAt', 'updatedAt']);
+    }
+    return result;
   }
 
   @Get(':id/payments')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get payments for an invoice' })
-  getPayments(@Param('id') id: string) {
-    return this.invoicesService.getPayments(id);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
+  async getPayments(
+    @Param('id') id: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const result = await this.invoicesService.getPayments(id);
+    if (calendar === 'ec' && Array.isArray(result)) {
+      return convertDatesInArray(result, calendar, ['paidAt', 'createdAt']);
+    }
+    return result;
   }
 
   @Get(':id/pdf')
@@ -100,12 +117,15 @@ export class InvoicesController {
   @Post(':id/payments')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Record a payment' })
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'], description: 'Send dates in EC format' })
   addPayment(
     @Param('id') id: string,
     @Body() dto: CreatePaymentDto,
     @CurrentUser('id') userId: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
   ) {
-    return this.invoicesService.addPayment(id, dto, userId);
+    const convertedDto = convertInputDates(dto as any, calendar, ['paidAt']);
+    return this.invoicesService.addPayment(id, convertedDto, userId);
   }
 
   @Delete(':id')

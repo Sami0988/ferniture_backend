@@ -332,6 +332,7 @@ export class InvoicesRepository {
         // Auto-mark project as paid if fully settled
         if (newPaidNow >= Number(project.totalPrice || 0) && project.status !== 'paid') {
           updateData.status = 'paid';
+          updateData.paidAt = new Date();
         }
 
         await tx.update(projects).set(updateData).where(eq(projects.id, invoice.projectId));

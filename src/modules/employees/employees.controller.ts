@@ -4,6 +4,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto, UpdateEmployeeDto } from './dto/employee.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { convertInputDates, convertDatesInObject } from '../../common/utils/date-converter.util';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -31,30 +32,49 @@ export class EmployeesController {
   @Get(':id')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get employee by ID' })
-  findOne(@Param('id') id: string) {
-    return this.employeesService.findById(id);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
+  async findOne(
+    @Param('id') id: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const result = await this.employeesService.findById(id);
+    if (calendar === 'ec' && result) {
+      return convertDatesInObject(result, calendar, ['hireDate']);
+    }
+    return result;
   }
 
   @Post()
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Create a new employee' })
-  create(@Body() dto: CreateEmployeeDto) {
-    return this.employeesService.create(dto);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'], description: 'Send dates in EC format' })
+  create(
+    @Body() dto: CreateEmployeeDto,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const convertedDto = convertInputDates(dto as any, calendar, ['hireDate']);
+    return this.employeesService.create(convertedDto);
   }
 
   @Put(':id')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Update employee' })
-  update(@Param('id') id: string, @Body() dto: UpdateEmployeeDto) {
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateEmployeeDto,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
     const { isActive, ...rest } = dto;
+    const convertedRest = convertInputDates(rest as any, calendar, ['hireDate']);
     const userData: any = {};
     const profileData: any = {};
-    if (rest.fullName !== undefined) userData.fullName = rest.fullName;
-    if (rest.phone !== undefined) userData.phone = rest.phone;
-    if (rest.email !== undefined) userData.email = rest.email;
-    if (rest.specialty !== undefined) profileData.specialty = rest.specialty;
-    if (rest.hireDate !== undefined) profileData.hireDate = rest.hireDate;
-    if (rest.idNumber !== undefined) profileData.idNumber = rest.idNumber;
+    if (convertedRest.fullName !== undefined) userData.fullName = convertedRest.fullName;
+    if (convertedRest.phone !== undefined) userData.phone = convertedRest.phone;
+    if (convertedRest.email !== undefined) userData.email = convertedRest.email;
+    if (convertedRest.specialty !== undefined) profileData.specialty = convertedRest.specialty;
+    if (convertedRest.hireDate !== undefined) profileData.hireDate = convertedRest.hireDate;
+    if (convertedRest.idNumber !== undefined) profileData.idNumber = convertedRest.idNumber;
     return this.employeesService.update(id, userData, profileData);
   }
 

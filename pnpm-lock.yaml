@@ -98,6 +98,9 @@ importers:
       drizzle-orm:
         specifier: ^0.39.3
         version: 0.39.3(@opentelemetry/api@1.9.1)(postgres@3.4.9)
+      ethiopian-calendar-new:
+        specifier: ^1.1.0
+        version: 1.1.0
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
@@ -3388,6 +3391,10 @@ packages:
   etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
+
+  ethiopian-calendar-new@1.1.0:
+    resolution: {integrity: sha512-5M0vB1Jb2lmK/l6s1mSykn4+/R4dElF89WXUp4HBdnwLYgHAnZ2nShebY5mgc/Noc5b9Sg8gTF+MYbmNUk+qSA==}
+    engines: {node: '>=16.0.0'}
 
   event-target-shim@5.0.1:
     resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
@@ -9493,6 +9500,8 @@ snapshots:
   esutils@2.0.3: {}
 
   etag@1.8.1: {}
+
+  ethiopian-calendar-new@1.1.0: {}
 
   event-target-shim@5.0.1:
     optional: true

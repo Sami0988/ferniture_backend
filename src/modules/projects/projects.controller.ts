@@ -19,6 +19,7 @@ import {
   ProjectQueryDto,
 } from './dto/project.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { convertInputDates, convertDatesInObject } from '../../common/utils/date-converter.util';
 
 @ApiTags('Projects')
 @ApiBearerAuth()
@@ -45,8 +46,16 @@ export class ProjectsController {
   @Get(':id')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get project by ID' })
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findById(id);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
+  async findOne(
+    @Param('id') id: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const result = await this.projectsService.findById(id);
+    if (calendar === 'ec' && result) {
+      return convertDatesInObject(result, calendar, ['orderDate', 'deliveryDate', 'completedAt', 'deliveredAt', 'paidAt']);
+    }
+    return result;
   }
 
   @Get(':id/status-history')
@@ -90,6 +99,7 @@ export class ProjectsController {
   ]))
   @ApiOperation({ summary: 'Create a new project' })
   @ApiConsumes('multipart/form-data')
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'], description: 'Send dates in EC format' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -100,8 +110,8 @@ export class ProjectsController {
         description: { type: 'string' },
         totalPrice: { type: 'number' },
         paidNowPrice: { type: 'number' },
-        orderDate: { type: 'string', format: 'date' },
-        deliveryDate: { type: 'string', format: 'date' },
+        orderDate: { type: 'string', format: 'date', description: 'YYYY-MM-DD (GC or EC)' },
+        deliveryDate: { type: 'string', format: 'date', description: 'YYYY-MM-DD (GC or EC)' },
         leadEmployeeId: { type: 'string', format: 'uuid' },
         branchName: { type: 'string' },
         city: { type: 'string' },
@@ -116,8 +126,10 @@ export class ProjectsController {
     @Body() dto: CreateProjectDto,
     @CurrentUser('id') userId: string,
     @UploadedFiles() files?: { coverImage?: Express.Multer.File[] },
+    @Query('calendar') calendar?: 'gc' | 'ec',
   ) {
-    return this.projectsService.create(dto, dto.assigneeIds || [], userId, files);
+    const convertedDto = convertInputDates(dto as any, calendar, ['orderDate', 'deliveryDate']);
+    return this.projectsService.create(convertedDto, dto.assigneeIds || [], userId, files);
   }
 
   @Put(':id')
@@ -127,6 +139,7 @@ export class ProjectsController {
   ]))
   @ApiOperation({ summary: 'Update project' })
   @ApiConsumes('multipart/form-data')
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
   @ApiBody({
     schema: {
       type: 'object',
@@ -139,7 +152,7 @@ export class ProjectsController {
         paidNowPrice: { type: 'number' },
         status: { type: 'string', enum: ['new', 'in_progress', 'completed', 'delivered', 'paid', 'cancelled'] },
         priority: { type: 'string', enum: ['normal', 'urgent', 'vip'] },
-        deliveryDate: { type: 'string', format: 'date' },
+        deliveryDate: { type: 'string', format: 'date', description: 'YYYY-MM-DD (GC or EC)' },
         leadEmployeeId: { type: 'string', format: 'uuid' },
         assigneeIds: { type: 'array', items: { type: 'string', format: 'uuid' } },
         coverImage: { type: 'string', format: 'binary' },
@@ -150,9 +163,11 @@ export class ProjectsController {
     @Param('id') id: string,
     @Body() dto: UpdateProjectDto,
     @UploadedFiles() files?: { coverImage?: Express.Multer.File[] },
+    @Query('calendar') calendar?: 'gc' | 'ec',
   ) {
     const { assigneeIds, ...data } = dto;
-    return this.projectsService.update(id, data, assigneeIds, files);
+    const convertedData = convertInputDates(data as any, calendar, ['deliveryDate']);
+    return this.projectsService.update(id, convertedData, assigneeIds, files);
   }
 
   @Patch(':id/status')
@@ -203,12 +218,15 @@ export class ProjectsController {
   @Post(':id/pay')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Record a payment for a project' })
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
   addPayment(
     @Param('id') id: string,
     @Body() dto: PayProjectDto,
     @CurrentUser('id') userId: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
   ) {
-    return this.paymentsService.addPayment(id, dto, userId);
+    const convertedDto = convertInputDates(dto as any, calendar);
+    return this.paymentsService.addPayment(id, convertedDto, userId);
   }
 
   @Delete(':id')

@@ -187,6 +187,10 @@ export class ProjectsRepository {
       const updateData: any = { status: newStatus, updatedAt: new Date() };
       if (newStatus === 'completed') updateData.completedAt = new Date();
       if (newStatus === 'delivered') updateData.deliveredAt = new Date();
+      if (newStatus === 'paid') {
+        updateData.paidNowPrice = current.totalPrice;
+        updateData.paidAt = new Date();
+      }
 
       await tx.update(projects).set(updateData).where(eq(projects.id, id));
 

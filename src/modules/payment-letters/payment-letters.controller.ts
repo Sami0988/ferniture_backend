@@ -9,6 +9,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { PaymentLettersService } from './payment-letters.service';
 import { CreatePaymentLetterDto, UpdatePaymentLetterDto, QueryPaymentLettersDto } from './dto/payment-letter.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { convertInputDates, convertDatesInObject } from '../../common/utils/date-converter.util';
 
 @ApiTags('Payment Letters')
 @ApiBearerAuth()
@@ -30,8 +31,16 @@ export class PaymentLettersController {
   @Get(':id')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Get payment letter by ID' })
-  findOne(@Param('id') id: string) {
-    return this.paymentLettersService.findById(id);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
+  async findOne(
+    @Param('id') id: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const result = await this.paymentLettersService.findById(id);
+    if (calendar === 'ec' && result) {
+      return convertDatesInObject(result, calendar, ['dueDate', 'createdAt', 'updatedAt']);
+    }
+    return result;
   }
 
   @Get(':id/pdf')
@@ -53,15 +62,27 @@ export class PaymentLettersController {
   @Post()
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Create a payment letter' })
-  create(@Body() dto: CreatePaymentLetterDto, @CurrentUser('id') userId: string) {
-    return this.paymentLettersService.create(dto, userId);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'], description: 'Send dates in EC format' })
+  create(
+    @Body() dto: CreatePaymentLetterDto,
+    @CurrentUser('id') userId: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const convertedDto = convertInputDates(dto as any, calendar, ['dueDate']);
+    return this.paymentLettersService.create(convertedDto, userId);
   }
 
   @Patch(':id')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Update payment letter (draft only)' })
-  update(@Param('id') id: string, @Body() dto: UpdatePaymentLetterDto) {
-    return this.paymentLettersService.update(id, dto);
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePaymentLetterDto,
+    @Query('calendar') calendar?: 'gc' | 'ec',
+  ) {
+    const convertedDto = convertInputDates(dto as any, calendar, ['dueDate']);
+    return this.paymentLettersService.update(id, convertedDto);
   }
 
   @Post(':id/send')

@@ -5,6 +5,7 @@ import { projects, purchases, suppliers, customers } from '../../database/schema
 import { PurchasesRepository } from '../purchases/purchases.repository';
 import { resolveDateRange } from './date-range.util';
 import { generatePdfBuffer } from '../../common/services/pdf.service';
+import { convertDate, toEC } from '../../common/utils/date-converter.util';
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
@@ -24,7 +25,9 @@ export class TaxReportService {
     referenceDate?: string;
     from?: string;
     to?: string;
+    calendar?: 'gc' | 'ec';
   }) {
+    const calendar = query.calendar || 'gc';
     const { from, to, label } = resolveDateRange({
       period: query.period as any,
       referenceDate: query.referenceDate,
@@ -48,10 +51,13 @@ export class TaxReportService {
     const netVat = round2(outputVat - inputVat);
 
     return {
+      calendar,
       period: {
         type: query.period || 'custom',
-        from: fromDate,
-        to: toDate,
+        from: convertDate(fromDate, calendar),
+        to: convertDate(toDate, calendar),
+        fromGC: fromDate,
+        toGC: toDate,
         label,
       },
       purchases: {
@@ -61,11 +67,17 @@ export class TaxReportService {
           parseFloat(purchaseAgg.totalWithholding || '0'),
         ),
         count: purchaseAgg.count || 0,
+        message: (purchaseAgg.count || 0) === 0
+          ? `No purchases for this ${query.period || 'period'}`
+          : null,
       },
       workProjects: {
         totalBeforeVat: round2(parseFloat(projectAgg.totalBeforeVat || '0')),
         totalVat: outputVat,
         count: projectAgg.count || 0,
+        message: (projectAgg.count || 0) === 0
+          ? `No paid work projects for this ${query.period || 'period'}`
+          : null,
       },
       vatSummary: {
         outputVat,
@@ -82,8 +94,16 @@ export class TaxReportService {
         ),
       },
       breakdown: {
-        purchases: purchaseBreakdown,
-        workProjects: projectBreakdown,
+        purchases: purchaseBreakdown.map((p: any) => ({
+          ...p,
+          purchaseDate: convertDate(p.purchaseDate, calendar),
+          purchaseDateGC: p.purchaseDate,
+        })),
+        workProjects: projectBreakdown.map((p: any) => ({
+          ...p,
+          paidAt: convertDate(p.paidAt, calendar),
+          paidAtGC: p.paidAt,
+        })),
       },
     };
   }
@@ -117,8 +137,10 @@ export class TaxReportService {
       .from(projects)
       .where(
         and(
-          gte(projects.orderDate, fromDate),
-          lte(projects.orderDate, toDate),
+          sql`${projects.paidAt}::date >= ${fromDate}`,
+          sql`${projects.paidAt}::date <= ${toDate}`,
+          eq(projects.status, 'paid'),
+          gte(projects.paidNowPrice, projects.totalPrice),
         ),
       );
 
@@ -155,7 +177,7 @@ export class TaxReportService {
         id: projects.id,
         projectName: projects.title,
         clientName: customers.fullName,
-        projectDate: projects.orderDate,
+        paidAt: projects.paidAt,
         priceBeforeVat: projects.priceBeforeVat,
         vatAmount: projects.vatAmount,
         totalPrice: projects.totalPrice,
@@ -164,8 +186,10 @@ export class TaxReportService {
       .leftJoin(customers, eq(projects.customerId, customers.id))
       .where(
         and(
-          gte(projects.orderDate, fromDate),
-          lte(projects.orderDate, toDate),
+          sql`${projects.paidAt}::date >= ${fromDate}`,
+          sql`${projects.paidAt}::date <= ${toDate}`,
+          eq(projects.status, 'paid'),
+          gte(projects.paidNowPrice, projects.totalPrice),
         ),
       );
 

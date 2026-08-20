@@ -10,6 +10,7 @@ import { join } from 'path';
 import { AppModule } from './app.module';
 import { RequestIdMiddleware } from './common/middlewares/request-id.middleware';
 
+// bootstrap
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 

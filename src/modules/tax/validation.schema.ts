@@ -50,6 +50,7 @@ export const taxReportQuerySchema = z
     referenceDate: z.string().optional(),
     from: z.string().optional(),
     to: z.string().optional(),
+    calendar: z.enum(['gc', 'ec']).optional(),
   })
   .refine(
     (data) => {

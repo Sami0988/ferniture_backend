@@ -282,7 +282,7 @@ async function seed() {
     const sup = allSuppliers[supplierIdx % allSuppliers.length];
     const subtotal = items.reduce((s, i) => s + i.qty * i.price, 0);
     const vatAmount = Math.round(subtotal * 0.15);
-    const withholding = Math.round(subtotal * 0.02);
+    const withholding = Math.round(subtotal * 0.03);
     const total = subtotal + vatAmount;
 
     const [p] = await db.insert(purchases).values({
@@ -445,6 +445,7 @@ async function seed() {
     custIdx: number, division: 'furniture' | 'aluminum' | 'interior_design',
     title: string, description: string, status: string,
     totalPrice: number, paidNow: number, orderDate: string, deliveryDate: string,
+    paidAt?: string,
   ) {
     const cust = allCustomers[custIdx % allCustomers.length];
     const vat = Math.round(totalPrice * 0.15 / 1.15);
@@ -464,6 +465,7 @@ async function seed() {
       paidNowPrice: paidNow,
       orderDate,
       deliveryDate,
+      paidAt: paidAt ? new Date(paidAt) : null,
       leadEmployeeId: [emp1.id, emp2.id, emp3.id][projCounter % 3],
       createdBy: superAdmin.id,
     }).returning();
@@ -523,24 +525,24 @@ async function seed() {
 
   // JAN - Medium income
   const janP1 = await insertProject(0, 'furniture', 'Custom Dining Table Set',
-    'Mahogany 6-seater dining table with chairs', 'completed',
-    120000, 120000, '2026-01-10', '2026-02-15');
+    'Mahogany 6-seater dining table with chairs', 'paid',
+    120000, 120000, '2026-01-10', '2026-02-15', '2026-01-25');
   await insertInvoice(0, janP1, 'INV-2026-0001', '2026-01-15', [
     { desc: 'Mahogany Dining Table', qty: 1, price: 75000 },
     { desc: 'Dining Chairs', qty: 6, price: 7500 },
   ]);
 
   const janP2 = await insertProject(1, 'aluminum', 'Aluminum Door Frames',
-    '3 aluminum door frames for office', 'completed',
-    85000, 85000, '2026-01-18', '2026-02-20');
+    '3 aluminum door frames for office', 'paid',
+    85000, 85000, '2026-01-18', '2026-02-20', '2026-02-25');
   await insertInvoice(1, janP2, 'INV-2026-0002', '2026-01-20', [
     { desc: 'Aluminum Door Frame', qty: 3, price: 28333 },
   ]);
 
   // FEB - HIGH income
   const febP1 = await insertProject(2, 'interior_design', 'Office Interior Redesign',
-    'Complete office interior with custom furniture', 'completed',
-    250000, 250000, '2026-02-01', '2026-03-15');
+    'Complete office interior with custom furniture', 'paid',
+    250000, 250000, '2026-02-01', '2026-03-15', '2026-03-20');
   await insertInvoice(2, febP1, 'INV-2026-0003', '2026-02-05', [
     { desc: 'Office Desk Set', qty: 10, price: 15000 },
     { desc: 'Conference Table', qty: 1, price: 45000 },
@@ -548,8 +550,8 @@ async function seed() {
   ]);
 
   const febP2 = await insertProject(0, 'furniture', 'Kitchen Cabinet Set',
-    'Custom mahogany kitchen cabinets', 'completed',
-    180000, 180000, '2026-02-10', '2026-03-20');
+    'Custom mahogany kitchen cabinets', 'paid',
+    180000, 180000, '2026-02-10', '2026-03-20', '2026-03-25');
   await insertInvoice(0, febP2, 'INV-2026-0004', '2026-02-12', [
     { desc: 'Upper Cabinets', qty: 1, price: 65000 },
     { desc: 'Lower Cabinets', qty: 1, price: 75000 },
@@ -557,7 +559,7 @@ async function seed() {
   ]);
 
   const febP3 = await insertProject(3, 'aluminum', 'Aluminum Window Frames',
-    '10 aluminum window frames', 'completed',
+    '10 aluminum window frames', 'delivered',
     150000, 100000, '2026-02-15', '2026-03-25');
   await insertInvoice(3, febP3, 'INV-2026-0005', '2026-02-18', [
     { desc: 'Aluminum Window Frame (standard)', qty: 7, price: 15000 },
@@ -566,8 +568,8 @@ async function seed() {
 
   // MAR - Medium income
   const marP1 = await insertProject(4, 'furniture', 'Bedroom Wardrobe Set',
-    'Custom teak wardrobe with mirror panels', 'completed',
-    160000, 160000, '2026-03-05', '2026-04-10');
+    'Custom teak wardrobe with mirror panels', 'paid',
+    160000, 160000, '2026-03-05', '2026-04-10', '2026-04-15');
   await insertInvoice(4, marP1, 'INV-2026-0006', '2026-03-08', [
     { desc: 'Teak Wardrobe', qty: 1, price: 95000 },
     { desc: 'Dressing Table', qty: 1, price: 35000 },
@@ -575,31 +577,31 @@ async function seed() {
   ]);
 
   const marP2 = await insertProject(5, 'aluminum', 'Aluminum Partition Walls',
-    'Office partition walls with glass panels', 'completed',
-    95000, 95000, '2026-03-15', '2026-04-15');
+    'Office partition walls with glass panels', 'delivered',
+    95000, 95000, '2026-03-15', '2026-04-15', '2026-04-20');
   await insertInvoice(5, marP2, 'INV-2026-0007', '2026-03-18', [
     { desc: 'Aluminum Partition Wall', qty: 5, price: 19000 },
   ]);
 
   // APR - Low income
   const aprP1 = await insertProject(0, 'furniture', 'Side Table Set',
-    'Simple mahogany side tables', 'completed',
-    65000, 65000, '2026-04-01', '2026-04-20');
+    'Simple mahogany side tables', 'cancelled',
+    65000, 0, '2026-04-01', '2026-04-20');
   await insertInvoice(0, aprP1, 'INV-2026-0008', '2026-04-03', [
     { desc: 'Side Table', qty: 3, price: 21666 },
   ]);
 
   // MAY - Low income
   const mayP1 = await insertProject(1, 'aluminum', 'Small Aluminum Frames',
-    '4 small aluminum frames', 'completed',
-    55000, 55000, '2026-05-05', '2026-05-25');
+    '4 small aluminum frames', 'in_progress',
+    55000, 25000, '2026-05-05', '2026-05-25');
   await insertInvoice(1, mayP1, 'INV-2026-0009', '2026-05-08', [
     { desc: 'Aluminum Frame (small)', qty: 4, price: 13750 },
   ]);
 
   // JUN - Medium income
   const junP1 = await insertProject(2, 'interior_design', 'Restaurant Interior',
-    'Restaurant dining area design and furniture', 'completed',
+    'Restaurant dining area design and furniture', 'delivered',
     120000, 80000, '2026-06-01', '2026-07-10');
   await insertInvoice(2, junP1, 'INV-2026-0010', '2026-06-05', [
     { desc: 'Dining Tables', qty: 8, price: 10000 },
@@ -607,8 +609,8 @@ async function seed() {
   ]);
 
   const junP2 = await insertProject(3, 'furniture', 'Living Room Set',
-    'Complete living room furniture set', 'completed',
-    110000, 110000, '2026-06-15', '2026-07-20');
+    'Complete living room furniture set', 'paid',
+    110000, 110000, '2026-06-15', '2026-07-20', '2026-07-25');
   await insertInvoice(3, junP2, 'INV-2026-0011', '2026-06-18', [
     { desc: 'Sofa Set', qty: 1, price: 65000 },
     { desc: 'TV Console', qty: 1, price: 25000 },
@@ -617,7 +619,7 @@ async function seed() {
 
   // JUL - HIGH income
   const julP1 = await insertProject(4, 'furniture', 'Hotel Furniture Order',
-    '50 hotel room furniture sets', 'completed',
+    '50 hotel room furniture sets', 'delivered',
     350000, 200000, '2026-07-01', '2026-08-30');
   await insertInvoice(4, julP1, 'INV-2026-0012', '2026-07-05', [
     { desc: 'Hotel Bed Frame', qty: 50, price: 4000 },
@@ -626,15 +628,15 @@ async function seed() {
   ]);
 
   const julP2 = await insertProject(5, 'aluminum', 'Aluminum Facade System',
-    'Aluminum facade for commercial building', 'completed',
+    'Aluminum facade for commercial building', 'delivered',
     280000, 150000, '2026-07-08', '2026-08-25');
   await insertInvoice(5, julP2, 'INV-2026-0013', '2026-07-12', [
     { desc: 'Aluminum Facade Panel', qty: 100, price: 2800 },
   ]);
 
   const julP3 = await insertProject(0, 'interior_design', 'Showroom Design',
-    'Full showroom interior design', 'completed',
-    180000, 180000, '2026-07-15', '2026-08-20');
+    'Full showroom interior design', 'paid',
+    180000, 180000, '2026-07-15', '2026-08-20', '2026-08-25');
   await insertInvoice(0, julP3, 'INV-2026-0014', '2026-07-18', [
     { desc: 'Display Units', qty: 6, price: 20000 },
     { desc: 'Lighting Fixtures', qty: 1, price: 30000 },
@@ -643,39 +645,39 @@ async function seed() {
 
   // AUG - Medium income
   const augP1 = await insertProject(1, 'furniture', 'Office Desk Order',
-    '20 custom office desks', 'completed',
-    100000, 100000, '2026-08-01', '2026-08-25');
+    '20 custom office desks', 'paid',
+    100000, 100000, '2026-08-01', '2026-08-25', '2026-08-20');
   await insertInvoice(1, augP1, 'INV-2026-0015', '2026-08-05', [
     { desc: 'Office Desk', qty: 20, price: 5000 },
   ]);
 
   const augP2 = await insertProject(2, 'aluminum', 'Security Doors',
-    'Aluminum security doors', 'completed',
-    75000, 75000, '2026-08-10', '2026-09-05');
+    'Aluminum security doors', 'paid',
+    75000, 75000, '2026-08-10', '2026-09-05', '2026-09-10');
   await insertInvoice(2, augP2, 'INV-2026-0016', '2026-08-13', [
     { desc: 'Aluminum Security Door', qty: 3, price: 25000 },
   ]);
 
   // SEP - Low income
   const sepP1 = await insertProject(3, 'furniture', 'Shoe Rack',
-    'Custom mahogany shoe rack', 'completed',
-    45000, 45000, '2026-09-05', '2026-09-25');
+    'Custom mahogany shoe rack', 'new',
+    45000, 0, '2026-09-05', '2026-09-25');
   await insertInvoice(3, sepP1, 'INV-2026-0017', '2026-09-08', [
     { desc: 'Shoe Rack', qty: 1, price: 45000 },
   ]);
 
   // OCT - Medium income
   const octP1 = await insertProject(4, 'interior_design', 'Bank Branch Interior',
-    'Bank branch complete interior', 'completed',
-    140000, 140000, '2026-10-01', '2026-11-10');
+    'Bank branch complete interior', 'paid',
+    140000, 140000, '2026-10-01', '2026-11-10', '2026-11-15');
   await insertInvoice(4, octP1, 'INV-2026-0018', '2026-10-05', [
     { desc: 'Counter Desk', qty: 4, price: 20000 },
     { desc: 'Waiting Area Seating', qty: 10, price: 6000 },
   ]);
 
   const octP2 = await insertProject(5, 'furniture', 'Conference Table',
-    'Large mahogany conference table', 'completed',
-    90000, 90000, '2026-10-12', '2026-11-05');
+    'Large mahogany conference table', 'paid',
+    90000, 90000, '2026-10-12', '2026-11-05', '2026-11-20');
   await insertInvoice(5, octP2, 'INV-2026-0019', '2026-10-15', [
     { desc: 'Conference Table', qty: 1, price: 70000 },
     { desc: 'Executive Chairs', qty: 8, price: 2500 },
@@ -683,7 +685,7 @@ async function seed() {
 
   // NOV - HIGH income
   const novP1 = await insertProject(0, 'furniture', 'Furniture Export Order',
-    'Large furniture export order', 'completed',
+    'Large furniture export order', 'delivered',
     220000, 120000, '2026-11-01', '2026-12-15');
   await insertInvoice(0, novP1, 'INV-2026-0020', '2026-11-05', [
     { desc: 'Dining Set', qty: 5, price: 30000 },
@@ -691,15 +693,15 @@ async function seed() {
   ]);
 
   const novP2 = await insertProject(1, 'aluminum', 'Aluminum Storefront',
-    'Full aluminum storefront for retail shop', 'completed',
-    170000, 170000, '2026-11-08', '2026-12-10');
+    'Full aluminum storefront for retail shop', 'paid',
+    170000, 170000, '2026-11-08', '2026-12-10', '2026-12-15');
   await insertInvoice(1, novP2, 'INV-2026-0021', '2026-11-12', [
     { desc: 'Storefront Frame', qty: 1, price: 100000 },
     { desc: 'Glass Panels', qty: 10, price: 7000 },
   ]);
 
   const novP3 = await insertProject(2, 'interior_design', 'Villa Interior',
-    'Luxury villa interior design and furniture', 'completed',
+    'Luxury villa interior design and furniture', 'delivered',
     300000, 150000, '2026-11-15', '2026-12-20');
   await insertInvoice(2, novP3, 'INV-2026-0022', '2026-11-18', [
     { desc: 'Living Room Set', qty: 1, price: 120000 },
@@ -709,8 +711,8 @@ async function seed() {
 
   // DEC - Medium income
   const decP1 = await insertProject(3, 'furniture', 'Year-End Office Furniture',
-    'Office furniture refresh order', 'completed',
-    85000, 85000, '2026-12-01', '2026-12-20');
+    'Office furniture refresh order', 'paid',
+    85000, 85000, '2026-12-01', '2026-12-20', '2026-12-20');
   await insertInvoice(3, decP1, 'INV-2026-0023', '2026-12-05', [
     { desc: 'Office Chair', qty: 15, price: 4000 },
     { desc: 'Filing Cabinet', qty: 5, price: 5000 },
@@ -718,7 +720,7 @@ async function seed() {
 
   const decP2 = await insertProject(4, 'aluminum', 'Window Replacement',
     'Replace old windows with aluminum frames', 'completed',
-    70000, 70000, '2026-12-08', '2026-12-28');
+    70000, 50000, '2026-12-08', '2026-12-28');
   await insertInvoice(4, decP2, 'INV-2026-0024', '2026-12-12', [
     { desc: 'Aluminum Window Frame', qty: 7, price: 10000 },
   ]);

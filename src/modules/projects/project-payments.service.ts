@@ -90,6 +90,7 @@ export class ProjectPaymentsService {
         .set({
           paidNowPrice: project.totalPrice || 0,
           status: 'paid',
+          paidAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(projects.id, projectId));

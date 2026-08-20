@@ -1,5 +1,5 @@
 const VAT_RATE = 0.15;
-const WITHHOLDING_RATE = 0.02;
+const WITHHOLDING_RATE = 0.03;
 const WITHHOLDING_THRESHOLD = 10000;
 
 export function calculatePurchaseTax(amountBeforeVat: number) {
