@@ -9,6 +9,7 @@ import {
 import { Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../database/drizzle.module';
 import { sql } from 'drizzle-orm';
+import { Public } from '../common/decorators/public.decorator';
 
 class DatabaseHealthIndicator extends HealthIndicator {
   constructor(private readonly db: any) {
@@ -25,6 +26,7 @@ class DatabaseHealthIndicator extends HealthIndicator {
   }
 }
 
+@Public()
 @Controller('health')
 export class HealthController {
   private dbHealthIndicator: DatabaseHealthIndicator;
