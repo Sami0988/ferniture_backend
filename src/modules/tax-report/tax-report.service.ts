@@ -33,6 +33,7 @@ export class TaxReportService {
       referenceDate: query.referenceDate,
       from: query.from,
       to: query.to,
+      calendar,
     });
 
     const fromDate = from.toISOString().split('T')[0];

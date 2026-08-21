@@ -87,6 +87,55 @@ export function convertDate(
   return dateStr.split('T')[0];
 }
 
+export function getEcMonthRange(gcDate: Date): { from: Date; to: Date } {
+  const ec = toEC(gcDate);
+  const from = toGC({ year: ec.year, month: ec.month, day: 1 });
+  const lastDay = ec.month === 13 ? getEcPagumeDays(ec.year) : 30;
+  const to = toGC({ year: ec.year, month: ec.month, day: lastDay });
+  return { from, to };
+}
+
+export function getEcYearRange(gcDate: Date): { from: Date; to: Date } {
+  const ec = toEC(gcDate);
+  const from = toGC({ year: ec.year, month: 1, day: 1 });
+  const lastDay = getEcPagumeDays(ec.year);
+  const to = toGC({ year: ec.year, month: 13, day: lastDay });
+  return { from, to };
+}
+
+export function getEcQuarterRange(gcDate: Date): { from: Date; to: Date } {
+  const ec = toEC(gcDate);
+  const quarterStartMonth = (Math.floor((ec.month - 1) / 3) * 3) + 1;
+  const from = toGC({ year: ec.year, month: quarterStartMonth, day: 1 });
+  const quarterEndMonth = quarterStartMonth + 2;
+  const lastDay = quarterEndMonth === 13 ? getEcPagumeDays(ec.year) : 30;
+  const to = toGC({ year: ec.year, month: quarterEndMonth, day: lastDay });
+  return { from, to };
+}
+
+export function getEcPeriodLabel(
+  gcDate: Date,
+  period: 'day' | 'week' | 'month' | 'quarter' | 'year',
+): string {
+  const ec = toEC(gcDate);
+  switch (period) {
+    case 'day':
+      return `${ec.day} ${EC_MONTHS[ec.month - 1]} ${ec.year}`;
+    case 'week':
+      return `Week of ${ec.day} ${EC_MONTHS[ec.month - 1]} ${ec.year}`;
+    case 'month':
+      return `${EC_MONTHS[ec.month - 1]} ${ec.year}`;
+    case 'quarter': {
+      const quarter = Math.floor((ec.month - 1) / 3) + 1;
+      return `Q${quarter} ${ec.year}`;
+    }
+    case 'year':
+      return `${ec.year}`;
+    default:
+      return `${EC_MONTHS[ec.month - 1]} ${ec.year}`;
+  }
+}
+
 export function getAmharicMonthName(month: number): string {
   const amharicMonths = [
     'መስከረም', 'ጥቅምት', 'ኅዳር', 'ታหሱስ', 'ጥር', 'የካቲት',

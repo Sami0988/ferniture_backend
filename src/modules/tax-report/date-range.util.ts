@@ -13,14 +13,22 @@ import {
   parseISO,
   format,
 } from 'date-fns';
+import {
+  getEcMonthRange,
+  getEcYearRange,
+  getEcQuarterRange,
+  getEcPeriodLabel,
+} from '../../common/utils/date-converter.util';
 
 type Period = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
+type Calendar = 'gc' | 'ec';
 
 interface DateRangeInput {
   period?: Period;
   referenceDate?: string;
   from?: string;
   to?: string;
+  calendar?: Calendar;
 }
 
 export function resolveDateRange(input: DateRangeInput): {
@@ -28,7 +36,8 @@ export function resolveDateRange(input: DateRangeInput): {
   to: Date;
   label: string;
 } {
-  const { period, referenceDate, from: customFrom, to: customTo } = input;
+  const { period, referenceDate, from: customFrom, to: customTo, calendar } = input;
+  const cal = calendar || 'gc';
 
   if (period === 'custom') {
     if (!customFrom || !customTo) {
@@ -55,6 +64,19 @@ export function resolveDateRange(input: DateRangeInput): {
   }
 
   const ref = referenceDate ? parseISO(referenceDate) : new Date();
+
+  if (cal === 'ec') {
+    return resolveEcDateRange(ref, period);
+  }
+
+  return resolveGcDateRange(ref, period);
+}
+
+function resolveGcDateRange(ref: Date, period: Period): {
+  from: Date;
+  to: Date;
+  label: string;
+} {
   let rangeFrom: Date;
   let rangeTo: Date;
   let label: string;
@@ -92,4 +114,39 @@ export function resolveDateRange(input: DateRangeInput): {
   }
 
   return { from: rangeFrom, to: rangeTo, label };
+}
+
+function resolveEcDateRange(ref: Date, period: Period): {
+  from: Date;
+  to: Date;
+  label: string;
+} {
+  switch (period) {
+    case 'day': {
+      const dayStart = startOfDay(ref);
+      const dayEnd = endOfDay(ref);
+      return { from: dayStart, to: dayEnd, label: getEcPeriodLabel(ref, 'day') };
+    }
+    case 'week': {
+      const weekFrom = startOfWeek(ref, { weekStartsOn: 1 });
+      const weekTo = endOfWeek(ref, { weekStartsOn: 1 });
+      return { from: weekFrom, to: weekTo, label: getEcPeriodLabel(ref, 'week') };
+    }
+    case 'month': {
+      const { from, to } = getEcMonthRange(ref);
+      return { from, to, label: getEcPeriodLabel(ref, 'month') };
+    }
+    case 'quarter': {
+      const { from, to } = getEcQuarterRange(ref);
+      return { from, to, label: getEcPeriodLabel(ref, 'quarter') };
+    }
+    case 'year': {
+      const { from, to } = getEcYearRange(ref);
+      return { from, to, label: getEcPeriodLabel(ref, 'year') };
+    }
+    default:
+      throw new BadRequestException(
+        `Invalid period "${period}". Must be one of: day, week, month, quarter, year, custom`,
+      );
+  }
 }
