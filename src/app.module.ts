@@ -39,6 +39,7 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { TaxReportModule } from './modules/tax-report/tax-report.module';
 import { SearchModule } from './modules/search/search.module';
+import { BackupModule } from './backup/backup.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { SearchModule } from './modules/search/search.module';
     PurchasesModule,
     TaxReportModule,
     SearchModule,
+    BackupModule,
   ],
   providers: [
     {
