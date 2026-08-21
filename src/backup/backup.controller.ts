@@ -6,6 +6,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Public } from '../common/decorators/public.decorator';
 
+@Public()
 @Controller('backup')
 export class BackupController {
   private readonly logger = new Logger(BackupController.name);
