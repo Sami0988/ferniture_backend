@@ -38,10 +38,6 @@ export class CreatePaymentLetterDto {
 
   @IsString()
   @IsOptional()
-  referenceNumber?: string;
-
-  @IsString()
-  @IsOptional()
   dueDate?: string;
 }
 
@@ -69,10 +65,6 @@ export class UpdatePaymentLetterDto {
   @IsString()
   @IsOptional()
   body?: string;
-
-  @IsString()
-  @IsOptional()
-  referenceNumber?: string;
 
   @IsString()
   @IsOptional()

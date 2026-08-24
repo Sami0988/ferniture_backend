@@ -44,11 +44,6 @@ export class CreateLetterTemplateDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(100)
-  referenceNumber?: string;
-
-  @IsString()
-  @IsOptional()
   @MaxLength(50)
   dueDate?: string;
 }
@@ -94,11 +89,6 @@ export class UpdateLetterTemplateDto {
   @IsString()
   @IsOptional()
   body?: string;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  referenceNumber?: string;
 
   @IsString()
   @IsOptional()

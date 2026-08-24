@@ -34,6 +34,10 @@ async function seed() {
     Date: {{date}}
   </div>
 
+  <div style="margin-bottom: 10px; font-size: 14px;">
+    Ref: {{letterNumber}}
+  </div>
+
   <div style="margin-bottom: 30px; line-height: 1.6;">
     To<br>
     {{recipientCompanyName}}<br>

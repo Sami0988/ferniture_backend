@@ -106,8 +106,8 @@ export class PaymentLettersService {
       { text: `Date: ${formattedDate}`, alignment: 'right', margin: [0, 0, 0, 10] },
     ];
 
-    if (letter.referenceNumber) {
-      content.push({ text: [{ text: 'Ref: ', bold: true }, letter.referenceNumber], margin: [0, 0, 0, 3] });
+    if (letter.letterNumber) {
+      content.push({ text: [{ text: 'Ref: ', bold: true }, letter.letterNumber], margin: [0, 0, 0, 3] });
     }
     if (formattedDueDate) {
       content.push({ text: [{ text: 'Payment Due: ', bold: true }, formattedDueDate], margin: [0, 0, 0, 10] });

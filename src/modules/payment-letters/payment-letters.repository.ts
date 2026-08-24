@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and } from 'drizzle-orm';
-import { paymentLetters, projects, customers, projectPayments } from '../../database/schema';
+import { paymentLetters, projects, customers } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -15,8 +15,8 @@ export class PaymentLettersRepository {
       .from(paymentLetters)
       .where(sql`EXTRACT(YEAR FROM ${paymentLetters.createdAt}) = ${year}`);
 
-    const seq = String((result.count || 0) + 1).padStart(4, '0');
-    return `PL-${year}-${seq}`;
+    const seq = String((result.count || 0) + 1).padStart(6, '0');
+    return `KK-${year}-${seq}`;
   }
 
   async create(data: {
@@ -29,7 +29,6 @@ export class PaymentLettersRepository {
     recipientAddress?: string;
     subject: string;
     body: string;
-    referenceNumber?: string;
     dueDate?: string;
     createdBy: string;
   }) {
@@ -48,7 +47,6 @@ export class PaymentLettersRepository {
         recipientAddress: data.recipientAddress || null,
         subject: data.subject,
         body: data.body,
-        referenceNumber: data.referenceNumber || null,
         dueDate: data.dueDate || null,
         status: 'draft',
         createdBy: data.createdBy,
@@ -72,7 +70,6 @@ export class PaymentLettersRepository {
         recipientAddress: paymentLetters.recipientAddress,
         subject: paymentLetters.subject,
         body: paymentLetters.body,
-        referenceNumber: paymentLetters.referenceNumber,
         dueDate: paymentLetters.dueDate,
         pdfUrl: paymentLetters.pdfUrl,
         status: paymentLetters.status,
@@ -94,23 +91,17 @@ export class PaymentLettersRepository {
 
     if (!letter) return null;
 
-    // Calculate additional payments from project_payments table
-    const [extraPayments] = await this.db
-      .select({ total: sql<number>`COALESCE(sum(amount), 0)` })
-      .from(projectPayments)
-      .where(eq(projectPayments.projectId, letter.projectId));
-
-    const paidNow = Number(letter.projectPaidNowPrice || 0);
-    const extraPaid = Number(extraPayments.total || 0);
-    const totalPaid = paidNow + extraPaid;
+    // Use paidNowPrice as source of truth (no double-counting)
     const totalPrice = Number(letter.projectTotalPrice || 0);
+    const totalPaid = Number(letter.projectPaidNowPrice || 0);
     const balanceDue = totalPrice - totalPaid;
 
     return {
       ...letter,
+      referenceNumber: letter.letterNumber,
       projectTotalPrice: String(totalPrice),
       projectTotalPaid: String(totalPaid),
-      projectBalanceDue: String(balanceDue),
+      projectBalanceDue: String(balanceDue < 0 ? 0 : balanceDue),
     };
   }
 
@@ -176,7 +167,6 @@ export class PaymentLettersRepository {
     recipientAddress?: string;
     subject?: string;
     body?: string;
-    referenceNumber?: string;
     dueDate?: string;
     templateId?: string;
     status?: string;

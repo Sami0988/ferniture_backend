@@ -17,7 +17,6 @@ export class LetterTemplatesRepository {
     recipientAddress?: string;
     subject?: string;
     body?: string;
-    referenceNumber?: string;
     dueDate?: string;
     isDefault?: boolean;
     createdBy: string;
@@ -34,7 +33,6 @@ export class LetterTemplatesRepository {
         recipientAddress: data.recipientAddress || null,
         subject: data.subject || null,
         body: data.body || null,
-        referenceNumber: data.referenceNumber || null,
         dueDate: data.dueDate || null,
         isDefault: data.isDefault || false,
         createdBy: data.createdBy,
@@ -64,7 +62,6 @@ export class LetterTemplatesRepository {
         recipientAddress: letterTemplates.recipientAddress,
         subject: letterTemplates.subject,
         body: letterTemplates.body,
-        referenceNumber: letterTemplates.referenceNumber,
         dueDate: letterTemplates.dueDate,
         isDefault: letterTemplates.isDefault,
         isActive: letterTemplates.isActive,
@@ -102,7 +99,6 @@ export class LetterTemplatesRepository {
     recipientAddress?: string;
     subject?: string;
     body?: string;
-    referenceNumber?: string;
     dueDate?: string;
     isDefault?: boolean;
     isActive?: boolean;
