@@ -51,9 +51,9 @@ export const taxReportQuerySchema = z
     from: z.string().optional(),
     to: z.string().optional(),
     calendar: z.enum(['gc', 'ec', 'ec-fiscal']).optional(),
-    fiscalYear: z.number().int().min(2000).max(3000).optional(),
-    fiscalMonth: z.number().int().min(1).max(12).optional(),
-    quarter: z.number().int().min(1).max(4).optional(),
+    fiscalYear: z.coerce.number().int().min(2000).max(3000).optional(),
+    fiscalMonth: z.coerce.number().int().min(1).max(12).optional(),
+    quarter: z.coerce.number().int().min(1).max(4).optional(),
   })
   .refine(
     (data) => {
