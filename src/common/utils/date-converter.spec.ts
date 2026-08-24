@@ -111,14 +111,16 @@ describe('Ethiopian Fiscal Year Utilities', () => {
   });
 
   describe('getEcPagumeDays', () => {
-    it('should return 5 for all years (matches library behavior)', () => {
-      // The ethiopian-calendar-new library treats Pagume as always 5 days.
-      // Day 6 wraps to Meskerem 1 of next year.
-      expect(getEcPagumeDays(2015)).toBe(5);
-      expect(getEcPagumeDays(2016)).toBe(5);
-      expect(getEcPagumeDays(2017)).toBe(5);
-      expect(getEcPagumeDays(2018)).toBe(5);
-      expect(getEcPagumeDays(2019)).toBe(5);
+    it('should return 6 for leap years and 5 for regular years', () => {
+      // Ethiopian leap year: year % 4 === 3 → Pagume has 6 days
+      // Regular year → Pagume has 5 days
+      expect(getEcPagumeDays(2015)).toBe(6);  // 2015 % 4 = 3 → leap year
+      expect(getEcPagumeDays(2016)).toBe(5);  // 2016 % 4 = 0 → regular
+      expect(getEcPagumeDays(2017)).toBe(5);  // 2017 % 4 = 1 → regular
+      expect(getEcPagumeDays(2018)).toBe(5);  // 2018 % 4 = 2 → regular
+      expect(getEcPagumeDays(2019)).toBe(6);  // 2019 % 4 = 3 → leap year
+      expect(getEcPagumeDays(2023)).toBe(6);  // 2023 % 4 = 3 → leap year
+      expect(getEcPagumeDays(2027)).toBe(6);  // 2027 % 4 = 3 → leap year
     });
   });
 

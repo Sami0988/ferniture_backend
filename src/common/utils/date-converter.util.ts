@@ -1,4 +1,4 @@
-import { toEthiopian, toGregorian } from 'ethiopian-calendar-new';
+import Kenat from 'kenat';
 
 const EC_MONTHS = [
   'Meskerem', 'Tikimt', 'Hidar', 'Tahsas', 'Ter', 'Yekatit',
@@ -36,10 +36,10 @@ function isGcLeapYear(year: number): boolean {
 }
 
 export function getEcPagumeDays(ecYear: number): number {
-  // The ethiopian-calendar-new library treats Pagume as always 5 days.
-  // Day 6 wraps to Meskerem 1 of next year in the library.
-  // We match this behavior for consistency.
-  return 5;
+  // Ethiopian leap year: year % 4 === 3 → Pagume has 6 days
+  // Regular year → Pagume has 5 days
+  const kenat = new Kenat(`${ecYear}/1/1`);
+  return kenat.isLeapYear() ? 6 : 5;
 }
 
 export function toEC(gcDate: Date | string): {
@@ -50,11 +50,8 @@ export function toEC(gcDate: Date | string): {
   formatted: string;
 } {
   const date = typeof gcDate === 'string' ? new Date(gcDate) : new Date(gcDate);
-  const gcYear = date.getFullYear();
-  const gcMonth = date.getMonth() + 1;
-  const gcDay = date.getDate();
-
-  const ec = toEthiopian(gcYear, gcMonth, gcDay);
+  const kenat = new Kenat(date);
+  const ec = kenat.getEthiopian();
   const monthName = EC_MONTHS[ec.month - 1];
   const formatted = `${String(ec.day).padStart(2, '0')}/${String(ec.month).padStart(2, '0')}/${ec.year}`;
 
@@ -79,7 +76,8 @@ export function toGC(
     ecDay = ecInput.day;
   }
 
-  const gc = toGregorian(ecYear, ecMonth, ecDay);
+  const kenat = new Kenat(`${ecYear}/${ecMonth}/${ecDay}`);
+  const gc = kenat.getGregorian();
   return new Date(gc.year, gc.month - 1, gc.day);
 }
 
