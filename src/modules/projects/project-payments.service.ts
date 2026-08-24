@@ -27,13 +27,14 @@ export class ProjectPaymentsService {
       .where(eq(projectPayments.projectId, projectId))
       .orderBy(desc(projectPayments.createdAt));
 
-    const totalPaid = (project.paidNowPrice || 0) + payments.reduce((sum: number, p: any) => sum + p.amount, 0);
-    const totalPrice = project.totalPrice || 0;
+    // paidNowPrice is the source of truth for total paid amount
+    const totalPaid = Number(project.paidNowPrice || 0);
+    const totalPrice = Number(project.totalPrice || 0);
     const remaining = totalPrice - totalPaid;
 
     return {
       totalPrice,
-      paidNowPrice: project.paidNowPrice || 0,
+      paidNowPrice: Number(project.paidNowPrice || 0),
       totalPaid,
       remaining: remaining < 0 ? 0 : remaining,
       overpaid: remaining < 0 ? Math.abs(remaining) : 0,
@@ -53,12 +54,8 @@ export class ProjectPaymentsService {
 
     if (!project) throw new NotFoundException('Project not found');
 
-    const payments = await this.db
-      .select()
-      .from(projectPayments)
-      .where(eq(projectPayments.projectId, projectId));
-
-    const totalPaid = (project.paidNowPrice || 0) + payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+    // paidNowPrice is the source of truth for total paid
+    const totalPaid = project.paidNowPrice || 0;
     const remaining = (project.totalPrice || 0) - totalPaid;
 
     if (remaining <= 0 && data.amount > 0) {
@@ -77,24 +74,29 @@ export class ProjectPaymentsService {
       })
       .returning();
 
-    // Recalculate totals after payment
+    // Update paidNowPrice with the new payment
     const newTotalPaid = totalPaid + data.amount;
     const newRemaining = (project.totalPrice || 0) - newTotalPaid;
 
     // Auto-update status to 'paid' if fully settled
     let newStatus = project.status;
+    const updateData: any = {
+      paidNowPrice: newTotalPaid,
+      updatedAt: new Date(),
+    };
+
     if (newRemaining <= 0 && project.status !== 'paid') {
       newStatus = 'paid';
-      await this.db
-        .update(projects)
-        .set({
-          paidNowPrice: project.totalPrice || 0,
-          status: 'paid',
-          paidAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(projects.id, projectId));
+      updateData.status = 'paid';
+      updateData.paidAt = new Date();
+    }
 
+    await this.db
+      .update(projects)
+      .set(updateData)
+      .where(eq(projects.id, projectId));
+
+    if (newStatus !== project.status) {
       this.logger.log(`Project ${projectId} auto-marked as paid (fully settled)`);
     }
 
@@ -140,7 +142,7 @@ export class ProjectPaymentsService {
     return {
       payment,
       summary: {
-        totalPrice: project.totalPrice || 0,
+        totalPrice: Number(project.totalPrice || 0),
         previousPaid: totalPaid,
         paymentAmount: data.amount,
         newTotalPaid: newTotalPaid,
