@@ -459,7 +459,7 @@ async function seed() {
       description,
       status: status as any,
       priority: 'normal',
-      totalPrice,
+      totalPrice: String(totalPrice),
       priceBeforeVat: String(priceBeforeVat),
       vatAmount: String(vat),
       paidNowPrice: paidNow,
