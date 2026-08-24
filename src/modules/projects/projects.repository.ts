@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and } from 'drizzle-orm';
-import { projects, projectAssignees, projectStatusHistory, projectAttachments, projectPayments, notifications, customers, users, invoices, invoiceItems, payments } from '../../database/schema';
+import { projects, projectAssignees, projectStatusHistory, projectAttachments, projectPayments, paymentLetters, testimonials, galleryImages, notifications, customers, users, invoices, invoiceItems, payments } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -306,6 +306,9 @@ export class ProjectsRepository {
     }
     await this.db.delete(invoices).where(eq(invoices.projectId, id));
     // Delete project relations
+    await this.db.delete(paymentLetters).where(eq(paymentLetters.projectId, id));
+    await this.db.delete(testimonials).where(eq(testimonials.projectId, id));
+    await this.db.delete(galleryImages).where(eq(galleryImages.projectId, id));
     await this.db.delete(projectAttachments).where(eq(projectAttachments.projectId, id));
     await this.db.delete(projectAssignees).where(eq(projectAssignees.projectId, id));
     await this.db.delete(projectStatusHistory).where(eq(projectStatusHistory.projectId, id));

@@ -6,7 +6,7 @@ import { materials } from './materials.schema';
 export const testimonials = pgTable('testimonials', {
   id: uuid('id').defaultRandom().primaryKey(),
   customerName: varchar('customer_name', { length: 150 }).notNull(),
-  projectId: uuid('project_id').references(() => projects.id),
+  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
   rating: smallint('rating').notNull(),
   reviewText: text('review_text').notNull(),
   imageUrl: text('image_url'),
@@ -21,7 +21,7 @@ export const galleryImages = pgTable(
     id: uuid('id').defaultRandom().primaryKey(),
     title: varchar('title', { length: 150 }),
     division: divisionEnum('division').notNull(),
-    projectId: uuid('project_id').references(() => projects.id),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
     imageUrl: text('image_url').notNull(),
     roomType: varchar('room_type', { length: 50 }),
     aspect: varchar('aspect', { length: 10 }).default('square'),
