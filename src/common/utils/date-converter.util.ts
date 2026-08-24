@@ -36,7 +36,10 @@ function isGcLeapYear(year: number): boolean {
 }
 
 export function getEcPagumeDays(ecYear: number): number {
-  return ecYear % 4 === 3 ? 6 : 5;
+  // The ethiopian-calendar-new library treats Pagume as always 5 days.
+  // Day 6 wraps to Meskerem 1 of next year in the library.
+  // We match this behavior for consistency.
+  return 5;
 }
 
 export function toEC(gcDate: Date | string): {
