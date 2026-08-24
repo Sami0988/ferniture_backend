@@ -106,13 +106,9 @@ export class InvoicesRepository {
       totalAmount = round2(subtotal + vatAmount);
     }
 
-    // Determine payment status from project payments
-    const projectPaid = Number(project.paidNowPrice || 0);
-    const [extraPayments] = await this.db
-      .select({ total: sql<number>`COALESCE(sum(amount), 0)` })
-      .from(projectPayments)
-      .where(eq(projectPayments.projectId, projectId));
-    const totalProjectPaid = projectPaid + Number(extraPayments.total || 0);
+    // Determine payment status from project
+    // paidNowPrice is the source of truth (no double-counting)
+    const totalProjectPaid = Number(project.paidNowPrice || 0);
 
     let paymentStatus: string = 'unpaid';
     if (totalProjectPaid >= totalAmount) paymentStatus = 'paid';
@@ -147,19 +143,8 @@ export class InvoicesRepository {
       });
 
       // Sync existing project payments to invoice
+      // Only sync from projectPayments table (paidNowPrice is updated separately)
       if (totalProjectPaid > 0) {
-        // Record upfront payment if exists
-        if (projectPaid > 0) {
-          await tx.insert(payments).values({
-            invoiceId: invoice.id,
-            amount: String(projectPaid),
-            method: 'cash' as any,
-            paidAt: new Date(),
-            verifiedBy: createdBy,
-          });
-        }
-
-        // Record additional project payments
         const extraPmts = await tx
           .select()
           .from(projectPayments)
@@ -172,6 +157,20 @@ export class InvoicesRepository {
             method: p.method,
             paidAt: p.createdAt,
             verifiedBy: p.recordedBy,
+          });
+        }
+
+        // Also record the upfront payment from paidNowPrice if it exists
+        // and is not already in projectPayments
+        const extraPaid = extraPmts.reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+        const upfrontPaid = totalProjectPaid - extraPaid;
+        if (upfrontPaid > 0) {
+          await tx.insert(payments).values({
+            invoiceId: invoice.id,
+            amount: String(upfrontPaid),
+            method: 'cash' as any,
+            paidAt: new Date(),
+            verifiedBy: createdBy,
           });
         }
       }
