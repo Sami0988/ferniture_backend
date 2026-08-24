@@ -64,6 +64,13 @@
       "when": 1783201000000,
       "tag": "0008_add_missing_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783300000000,
+      "tag": "0009_fix_monetary_types",
+      "breakpoints": true
     }
   ]
 }

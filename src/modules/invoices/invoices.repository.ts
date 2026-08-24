@@ -3,6 +3,7 @@ import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and, gte } from 'drizzle-orm';
 import { invoices, invoiceItems, payments, customers, projects, projectPayments } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
+import { round2 } from '../tax/tax-calculation.util';
 
 @Injectable()
 export class InvoicesRepository {
@@ -30,9 +31,9 @@ export class InvoicesRepository {
     const subtotal = data.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const discount = data.discountAmount || 0;
     const vatRate = data.vatRate || 15;
-    const taxableAmount = subtotal - discount;
-    const vatAmount = taxableAmount * (vatRate / 100);
-    const totalAmount = taxableAmount + vatAmount;
+    const taxableAmount = round2(subtotal - discount);
+    const vatAmount = round2(taxableAmount * (vatRate / 100));
+    const totalAmount = round2(taxableAmount + vatAmount);
 
     const invoiceNumber = await this.generateInvoiceNumber();
 
@@ -87,11 +88,23 @@ export class InvoicesRepository {
     const totalPrice = Number(project.totalPrice || 0);
     if (totalPrice <= 0) throw new BadRequestException('Project has no price set. Set totalPrice first.');
 
-    // Calculate VAT from project price
+    // Use priceBeforeVat for correct VAT calculation (totalPrice already includes VAT)
+    const priceBeforeVat = Number(project.priceBeforeVat || 0);
     const vatRate = 15;
-    const subtotal = totalPrice;
-    const vatAmount = subtotal * (vatRate / 100);
-    const totalAmount = subtotal + vatAmount;
+    let subtotal: number;
+    let vatAmount: number;
+    let totalAmount: number;
+
+    if (priceBeforeVat > 0) {
+      subtotal = round2(priceBeforeVat);
+      vatAmount = round2(priceBeforeVat * (vatRate / 100));
+      totalAmount = round2(priceBeforeVat + vatAmount);
+    } else {
+      // Fallback: reverse-calculate pre-VAT from totalPrice
+      subtotal = round2(totalPrice / 1.15);
+      vatAmount = round2(subtotal * (vatRate / 100));
+      totalAmount = round2(subtotal + vatAmount);
+    }
 
     // Determine payment status from project payments
     const projectPaid = Number(project.paidNowPrice || 0);
@@ -361,6 +374,22 @@ export class InvoicesRepository {
   }
 
   async update(id: string, data: any) {
+    const existing = await this.findById(id);
+    if (!existing) throw new NotFoundException('Invoice not found');
+
+    // Recalculate VAT if subtotal or discount changed
+    if (data.subtotal !== undefined || data.discountAmount !== undefined || data.vatRate !== undefined) {
+      const subtotal = Number(data.subtotal !== undefined ? data.subtotal : existing.subtotal);
+      const discount = Number(data.discountAmount !== undefined ? data.discountAmount : existing.discountAmount || 0);
+      const vatRate = Number(data.vatRate !== undefined ? data.vatRate : existing.vatRate || 15);
+      const taxableAmount = round2(subtotal - discount);
+      data.vatAmount = String(round2(taxableAmount * (vatRate / 100)));
+      data.totalAmount = String(round2(taxableAmount + Number(data.vatAmount)));
+      data.subtotal = String(subtotal);
+      data.discountAmount = String(discount);
+      data.vatRate = String(vatRate);
+    }
+
     const [updated] = await this.db
       .update(invoices)
       .set({ ...data, updatedAt: new Date() })
@@ -392,9 +421,9 @@ export class InvoicesRepository {
     const [invoice] = await this.db.select().from(invoices).where(eq(invoices.id, invoiceId));
     const discount = Number(invoice.discountAmount || 0);
     const vatRate = Number(invoice.vatRate || 15);
-    const taxableAmount = subtotal - discount;
-    const vatAmount = taxableAmount * (vatRate / 100);
-    const totalAmount = taxableAmount + vatAmount;
+    const taxableAmount = round2(subtotal - discount);
+    const vatAmount = round2(taxableAmount * (vatRate / 100));
+    const totalAmount = round2(taxableAmount + vatAmount);
 
     await this.db
       .update(invoices)

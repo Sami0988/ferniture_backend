@@ -15,7 +15,7 @@ export const projects = pgTable(
     coverImage: text('cover_image'),
     status: projectStatusEnum('status').notNull().default('new'),
     priority: priorityEnum('priority').notNull().default('normal'),
-    totalPrice: doublePrecision('total_price'),
+    totalPrice: numeric('total_price', { precision: 14, scale: 2 }),
     priceBeforeVat: numeric('price_before_vat', { precision: 14, scale: 2 }),
     vatAmount: numeric('vat_amount', { precision: 14, scale: 2 }),
     paidNowPrice: doublePrecision('paid_now_price').default(0),
@@ -68,7 +68,7 @@ export const projectStatusHistory = pgTable('project_status_history', {
 export const projectPayments = pgTable('project_payments', {
   id: uuid('id').defaultRandom().primaryKey(),
   projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
-  amount: doublePrecision('amount').notNull(),
+  amount: numeric('amount', { precision: 14, scale: 2 }).notNull(),
   method: paymentMethodEnum('method').notNull(),
   note: text('note'),
   recordedBy: uuid('recorded_by').references(() => users.id),

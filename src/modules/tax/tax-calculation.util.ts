@@ -19,6 +19,6 @@ export function calculateProjectTax(priceBeforeVat: number) {
   return { vatAmount, totalPrice };
 }
 
-function round2(n: number) {
+export function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
