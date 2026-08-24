@@ -50,7 +50,10 @@ export const taxReportQuerySchema = z
     referenceDate: z.string().optional(),
     from: z.string().optional(),
     to: z.string().optional(),
-    calendar: z.enum(['gc', 'ec']).optional(),
+    calendar: z.enum(['gc', 'ec', 'ec-fiscal']).optional(),
+    fiscalYear: z.number().int().min(2000).max(3000).optional(),
+    fiscalMonth: z.number().int().min(1).max(12).optional(),
+    quarter: z.number().int().min(1).max(4).optional(),
   })
   .refine(
     (data) => {
@@ -62,6 +65,30 @@ export const taxReportQuerySchema = z
     {
       message:
         'period=custom requires both "from" and "to"; other periods require "period"',
+    },
+  )
+  .refine(
+    (data) => {
+      // fiscalMonth only valid with calendar=ec-fiscal and period=month
+      if (data.fiscalMonth !== undefined) {
+        return data.calendar === 'ec-fiscal' && data.period === 'month';
+      }
+      return true;
+    },
+    {
+      message: 'fiscalMonth is only valid with calendar=ec-fiscal and period=month',
+    },
+  )
+  .refine(
+    (data) => {
+      // quarter only valid with period=quarter
+      if (data.quarter !== undefined) {
+        return data.period === 'quarter';
+      }
+      return true;
+    },
+    {
+      message: 'quarter param is only valid with period=quarter',
     },
   );
 

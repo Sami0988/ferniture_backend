@@ -18,10 +18,15 @@ import {
   getEcYearRange,
   getEcQuarterRange,
   getEcPeriodLabel,
+  getFiscalYearForDate,
+  getFiscalMonthIndex,
+  getEcFiscalMonthRange,
+  getEcFiscalQuarterRange,
+  getEcFiscalYearRange,
 } from '../../common/utils/date-converter.util';
 
 type Period = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
-type Calendar = 'gc' | 'ec';
+type Calendar = 'gc' | 'ec' | 'ec-fiscal';
 
 interface DateRangeInput {
   period?: Period;
@@ -29,6 +34,9 @@ interface DateRangeInput {
   from?: string;
   to?: string;
   calendar?: Calendar;
+  fiscalYear?: number;
+  fiscalMonth?: number;
+  quarter?: number;
 }
 
 export function resolveDateRange(input: DateRangeInput): {
@@ -64,6 +72,10 @@ export function resolveDateRange(input: DateRangeInput): {
   }
 
   const ref = referenceDate ? parseISO(referenceDate) : new Date();
+
+  if (cal === 'ec-fiscal') {
+    return resolveEcFiscalDateRange(ref, period, input);
+  }
 
   if (cal === 'ec') {
     return resolveEcDateRange(ref, period);
@@ -143,6 +155,45 @@ function resolveEcDateRange(ref: Date, period: Period): {
     case 'year': {
       const { from, to } = getEcYearRange(ref);
       return { from, to, label: getEcPeriodLabel(ref, 'year') };
+    }
+    default:
+      throw new BadRequestException(
+        `Invalid period "${period}". Must be one of: day, week, month, quarter, year, custom`,
+      );
+  }
+}
+
+function resolveEcFiscalDateRange(ref: Date, period: Period, input: DateRangeInput): {
+  from: Date;
+  to: Date;
+  label: string;
+} {
+  const fiscalYear = input.fiscalYear ?? getFiscalYearForDate(ref);
+
+  switch (period) {
+    case 'day': {
+      const dayStart = startOfDay(ref);
+      const dayEnd = endOfDay(ref);
+      return { from: dayStart, to: dayEnd, label: `Day, FY${fiscalYear}` };
+    }
+    case 'week': {
+      const weekFrom = startOfWeek(ref, { weekStartsOn: 1 });
+      const weekTo = endOfWeek(ref, { weekStartsOn: 1 });
+      return { from: weekFrom, to: weekTo, label: `Week, FY${fiscalYear}` };
+    }
+    case 'month': {
+      const fiscalMonth = input.fiscalMonth ?? getFiscalMonthIndex(ref);
+      const { from, to, label } = getEcFiscalMonthRange(fiscalYear, fiscalMonth);
+      return { from, to, label };
+    }
+    case 'quarter': {
+      const quarter = (input.quarter ?? Math.ceil((input.fiscalMonth ?? getFiscalMonthIndex(ref)) / 3)) as 1 | 2 | 3 | 4;
+      const { from, to, label } = getEcFiscalQuarterRange(fiscalYear, quarter);
+      return { from, to, label };
+    }
+    case 'year': {
+      const { from, to, label } = getEcFiscalYearRange(fiscalYear);
+      return { from, to, label };
     }
     default:
       throw new BadRequestException(

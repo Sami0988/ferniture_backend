@@ -25,7 +25,10 @@ export class TaxReportService {
     referenceDate?: string;
     from?: string;
     to?: string;
-    calendar?: 'gc' | 'ec';
+    calendar?: 'gc' | 'ec' | 'ec-fiscal';
+    fiscalYear?: number;
+    fiscalMonth?: number;
+    quarter?: number;
   }) {
     const calendar = query.calendar || 'gc';
     const { from, to, label } = resolveDateRange({
@@ -34,6 +37,9 @@ export class TaxReportService {
       from: query.from,
       to: query.to,
       calendar,
+      fiscalYear: query.fiscalYear,
+      fiscalMonth: query.fiscalMonth,
+      quarter: query.quarter,
     });
 
     const fromDate = from.toISOString().split('T')[0];

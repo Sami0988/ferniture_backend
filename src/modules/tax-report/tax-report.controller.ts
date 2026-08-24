@@ -24,17 +24,29 @@ export class TaxReportController {
   @Roles('super_admin', 'manager')
   @UsePipes(new ZodValidationPipe(taxReportQuerySchema))
   @ApiOperation({ summary: 'Get tax report for a period' })
+  @ApiQuery({ name: 'period', enum: ['day', 'week', 'month', 'quarter', 'year', 'custom'], required: false })
+  @ApiQuery({ name: 'referenceDate', required: false })
+  @ApiQuery({ name: 'from', required: false })
+  @ApiQuery({ name: 'to', required: false })
+  @ApiQuery({ name: 'calendar', enum: ['gc', 'ec', 'ec-fiscal'], required: false, description: 'gc=Gregorian, ec=Ethiopian calendar year, ec-fiscal=Ethiopian fiscal year (Hamle–Sene)' })
+  @ApiQuery({ name: 'fiscalYear', required: false, description: 'Ethiopian fiscal year (e.g. 2018). Only with calendar=ec-fiscal.' })
+  @ApiQuery({ name: 'fiscalMonth', required: false, description: 'Fiscal month 1-12. Only with calendar=ec-fiscal & period=month.' })
+  @ApiQuery({ name: 'quarter', required: false, description: 'Quarter 1-4. Only with period=quarter.' })
   getReport(@Query() query: TaxReportQueryInput) {
     return this.taxReportService.getTaxReport(query);
   }
 
   @Get('export')
   @Roles('super_admin', 'manager')
-  @ApiOperation({ summary: 'Export tax report as CSV or PDF' })
+  @ApiOperation({ summary: 'Export tax report as CSV, XLSX, or PDF' })
   @ApiQuery({ name: 'period', required: false })
   @ApiQuery({ name: 'referenceDate', required: false })
   @ApiQuery({ name: 'from', required: false })
   @ApiQuery({ name: 'to', required: false })
+  @ApiQuery({ name: 'calendar', enum: ['gc', 'ec', 'ec-fiscal'], required: false })
+  @ApiQuery({ name: 'fiscalYear', required: false, description: 'Ethiopian fiscal year (e.g. 2018 for FY2018). Only valid with calendar=ec-fiscal.' })
+  @ApiQuery({ name: 'fiscalMonth', required: false, description: 'Fiscal month 1-12. Only valid with calendar=ec-fiscal and period=month.' })
+  @ApiQuery({ name: 'quarter', required: false, description: 'Quarter 1-4. Only valid with period=quarter.' })
   @ApiQuery({ name: 'format', enum: ['csv', 'xlsx', 'pdf'], required: true })
   async export(
     @Query() query: TaxReportQueryInput & { format: string },

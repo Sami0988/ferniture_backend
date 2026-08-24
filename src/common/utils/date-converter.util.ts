@@ -5,7 +5,33 @@ const EC_MONTHS = [
   'Megabit', 'Miazia', 'Genbot', 'Sene', 'Hamle', 'Nehasa', 'Pagume',
 ];
 
-export function isGcLeapYear(year: number): boolean {
+// ─── Fiscal Year Constants ───────────────────────────────────────────────────────
+// Ethiopian fiscal year: Hamle 1 → Sene 30
+// 12 fiscal periods, Nehase + Pagume merged as one period
+
+interface FiscalMonthDef {
+  index: number;
+  ecMonth: number;
+  name: string;
+  mergePagume: boolean;
+}
+
+export const FISCAL_MONTH_MAP: FiscalMonthDef[] = [
+  { index: 1,  ecMonth: 11, name: 'Hamle',             mergePagume: false },
+  { index: 2,  ecMonth: 12, name: 'Nehase–Pagume',    mergePagume: true  },
+  { index: 3,  ecMonth: 1,  name: 'Meskerem',          mergePagume: false },
+  { index: 4,  ecMonth: 2,  name: 'Tikimt',            mergePagume: false },
+  { index: 5,  ecMonth: 3,  name: 'Hidar',             mergePagume: false },
+  { index: 6,  ecMonth: 4,  name: 'Tahsas',            mergePagume: false },
+  { index: 7,  ecMonth: 5,  name: 'Ter',               mergePagume: false },
+  { index: 8,  ecMonth: 6,  name: 'Yekatit',           mergePagume: false },
+  { index: 9,  ecMonth: 7,  name: 'Megabit',           mergePagume: false },
+  { index: 10, ecMonth: 8,  name: 'Miazia',            mergePagume: false },
+  { index: 11, ecMonth: 9,  name: 'Genbot',            mergePagume: false },
+  { index: 12, ecMonth: 10, name: 'Sene',              mergePagume: false },
+];
+
+function isGcLeapYear(year: number): boolean {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
 }
 
@@ -70,7 +96,7 @@ export function formatToGC(ecDateString: string): string {
 
 export function convertDate(
   dateString: string | Date | null | undefined,
-  calendar: 'gc' | 'ec' = 'gc',
+  calendar: 'gc' | 'ec' | 'ec-fiscal' = 'gc',
 ): string | null {
   if (!dateString) return null;
 
@@ -80,7 +106,7 @@ export function convertDate(
       ? dateString.toISOString()
       : String(dateString);
 
-  if (calendar === 'ec') {
+  if (calendar === 'ec' || calendar === 'ec-fiscal') {
     return formatToEC(dateStr);
   }
 
@@ -105,7 +131,9 @@ export function getEcYearRange(gcDate: Date): { from: Date; to: Date } {
 
 export function getEcQuarterRange(gcDate: Date): { from: Date; to: Date } {
   const ec = toEC(gcDate);
-  const quarterStartMonth = (Math.floor((ec.month - 1) / 3) * 3) + 1;
+  // Pagume (month 13) folds into Q4 (months 10-12)
+  const effectiveMonth = ec.month === 13 ? 12 : ec.month;
+  const quarterStartMonth = (Math.floor((effectiveMonth - 1) / 3) * 3) + 1;
   const from = toGC({ year: ec.year, month: quarterStartMonth, day: 1 });
   const quarterEndMonth = quarterStartMonth + 2;
   const lastDay = quarterEndMonth === 13 ? getEcPagumeDays(ec.year) : 30;
@@ -134,6 +162,148 @@ export function getEcPeriodLabel(
     default:
       return `${EC_MONTHS[ec.month - 1]} ${ec.year}`;
   }
+}
+
+// ─── Fiscal Year Functions ────────────────────────────────────────────────────────
+
+/**
+ * Given any GC date, return the EC fiscal year it falls in.
+ * Fiscal year is named after its starting Hamle (e.g., FY2018 = Hamle 2018 → Sene 2019).
+ * - Hamle (ecMonth 11), Nehase (12), Pagume (13) → belong to current EC year
+ * - Meskerem (1) through Sene (10) → belong to previous EC year
+ */
+export function getFiscalYearForDate(gcDate: Date): number {
+  const ec = toEC(gcDate);
+  if (ec.month >= 11) {
+    return ec.year;
+  }
+  return ec.year - 1;
+}
+
+/**
+ * Get the GC date range for a specific fiscal month.
+ * Fiscal month 1 = Hamle, 2 = Nehase+Pagume (merged), 3 = Meskerem, ..., 12 = Sene.
+ *
+ * Hamle(11) and Nehase(12) belong to `fiscalYear` (EC year).
+ * Meskerem(1)...Sene(10) belong to `fiscalYear + 1` (next EC year).
+ *
+ * When mergePagume is true (fiscal month 2), `to` extends through the last day of Pagume.
+ */
+export function getEcFiscalMonthRange(
+  fiscalYear: number,
+  fiscalMonthIndex: number,
+): { from: Date; to: Date; label: string } {
+  if (fiscalMonthIndex < 1 || fiscalMonthIndex > 12) {
+    throw new Error(`Invalid fiscal month index: ${fiscalMonthIndex}. Must be 1-12.`);
+  }
+
+  const def = FISCAL_MONTH_MAP[fiscalMonthIndex - 1];
+
+  // Determine which EC year this fiscal month belongs to
+  const ecYear = def.ecMonth >= 11 ? fiscalYear : fiscalYear + 1;
+
+  const from = toGC({ year: ecYear, month: def.ecMonth, day: 1 });
+
+  let to: Date;
+  if (def.mergePagume) {
+    // Nehase + Pagume: extend to last day of Pagume
+    const lastDay = getEcPagumeDays(ecYear);
+    to = toGC({ year: ecYear, month: 13, day: lastDay });
+  } else {
+    // Standard 30-day month
+    to = toGC({ year: ecYear, month: def.ecMonth, day: 30 });
+  }
+
+  const label = getEcFiscalPeriodLabel(fiscalYear, 'month', fiscalMonthIndex);
+
+  return { from, to, label };
+}
+
+/**
+ * Get the GC date range for a fiscal quarter.
+ * Q1 = Hamle, Nehase+Pagume, Meskerem
+ * Q2 = Tikimt, Hidar, Tahsas
+ * Q3 = Ter, Yekatit, Megabit
+ * Q4 = Miazia, Genbot, Sene
+ */
+export function getEcFiscalQuarterRange(
+  fiscalYear: number,
+  quarter: 1 | 2 | 3 | 4,
+): { from: Date; to: Date; label: string } {
+  if (quarter < 1 || quarter > 4) {
+    throw new Error(`Invalid quarter: ${quarter}. Must be 1-4.`);
+  }
+
+  const startMonth = (quarter - 1) * 3 + 1;
+  const endMonth = startMonth + 2;
+
+  const startRange = getEcFiscalMonthRange(fiscalYear, startMonth);
+  const endRange = getEcFiscalMonthRange(fiscalYear, endMonth);
+
+  const label = getEcFiscalPeriodLabel(fiscalYear, 'quarter', quarter);
+
+  return { from: startRange.from, to: endRange.to, label };
+}
+
+/**
+ * Get the GC date range for a full fiscal year (Hamle 1 → Sene 30).
+ */
+export function getEcFiscalYearRange(
+  fiscalYear: number,
+): { from: Date; to: Date; label: string } {
+  const startRange = getEcFiscalMonthRange(fiscalYear, 1);
+  const endRange = getEcFiscalMonthRange(fiscalYear, 12);
+
+  const label = getEcFiscalPeriodLabel(fiscalYear, 'year');
+
+  return { from: startRange.from, to: endRange.to, label };
+}
+
+/**
+ * Human-readable labels for fiscal periods.
+ */
+export function getEcFiscalPeriodLabel(
+  fiscalYear: number,
+  period: 'month' | 'quarter' | 'year',
+  value?: number,
+): string {
+  switch (period) {
+    case 'month': {
+      if (!value || value < 1 || value > 12) return `FY${fiscalYear}`;
+      const def = FISCAL_MONTH_MAP[value - 1];
+      return `${def.name}, FY${fiscalYear}`;
+    }
+    case 'quarter': {
+      if (!value || value < 1 || value > 4) return `FY${fiscalYear}`;
+      const startMonth = (value - 1) * 3 + 1;
+      const endMonth = startMonth + 2;
+      const startName = FISCAL_MONTH_MAP[startMonth - 1].name;
+      const endName = FISCAL_MONTH_MAP[endMonth - 1].name;
+      return `Q${value} (${startName}–${endName}), FY${fiscalYear}`;
+    }
+    case 'year':
+      return `FY${fiscalYear}`;
+    default:
+      return `FY${fiscalYear}`;
+  }
+}
+
+/**
+ * Given any GC date, return which fiscal month index (1-12) it falls in.
+ * Used to auto-derive fiscal month when not explicitly provided.
+ */
+export function getFiscalMonthIndex(gcDate: Date): number {
+  const ec = toEC(gcDate);
+  if (ec.month === 13) {
+    // Pagume merges into fiscal month 2 (Nehase+Pagume)
+    return 2;
+  }
+  if (ec.month >= 11) {
+    // Hamle(11) → fiscal month 1, Nehase(12) → fiscal month 2
+    return ec.month - 10;
+  }
+  // Meskerem(1)...Sene(10) → fiscal months 3...12
+  return ec.month + 2;
 }
 
 export function getAmharicMonthName(month: number): string {
