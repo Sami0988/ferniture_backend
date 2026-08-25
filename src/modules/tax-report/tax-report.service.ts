@@ -4,7 +4,6 @@ import { and, gte, lte, sql, eq } from 'drizzle-orm';
 import { projects, purchases, suppliers, customers } from '../../database/schema';
 import { PurchasesRepository } from '../purchases/purchases.repository';
 import { resolveDateRange } from './date-range.util';
-import { generatePdfBuffer } from '../../common/services/pdf.service';
 import { convertDate, toEC } from '../../common/utils/date-converter.util';
 
 function round2(n: number) {

@@ -92,8 +92,59 @@ export const taxReportQuerySchema = z
     },
   );
 
+// --- Tax Report Export ---
+export const taxReportExportSchema = z
+  .object({
+    period: z
+      .enum(['day', 'week', 'month', 'quarter', 'year', 'custom'])
+      .optional(),
+    referenceDate: z.string().optional(),
+    from: z.string().optional(),
+    to: z.string().optional(),
+    calendar: z.enum(['gc', 'ec', 'ec-fiscal']).optional(),
+    fiscalYear: z.coerce.number().int().min(2000).max(3000).optional(),
+    fiscalMonth: z.coerce.number().int().min(1).max(12).optional(),
+    quarter: z.coerce.number().int().min(1).max(4).optional(),
+    format: z.enum(['csv', 'xlsx', 'pdf']),
+  })
+  .refine(
+    (data) => {
+      if (data.period === 'custom') {
+        return !!data.from && !!data.to;
+      }
+      return !!data.period;
+    },
+    {
+      message:
+        'period=custom requires both "from" and "to"; other periods require "period"',
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.fiscalMonth !== undefined) {
+        return data.calendar === 'ec-fiscal' && data.period === 'month';
+      }
+      return true;
+    },
+    {
+      message: 'fiscalMonth is only valid with calendar=ec-fiscal and period=month',
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.quarter !== undefined) {
+        return data.period === 'quarter';
+      }
+      return true;
+    },
+    {
+      message: 'quarter param is only valid with period=quarter',
+    },
+  );
+
 export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 export type CreatePurchaseInput = z.infer<typeof createPurchaseSchema>;
 export type UpdatePurchaseInput = z.infer<typeof updatePurchaseSchema>;
 export type TaxReportQueryInput = z.infer<typeof taxReportQuerySchema>;
+export type TaxReportExportInput = z.infer<typeof taxReportExportSchema>;

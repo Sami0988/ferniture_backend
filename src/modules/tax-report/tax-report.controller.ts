@@ -11,8 +11,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { TaxReportService } from './tax-report.service';
 import { generatePdfBuffer } from '../../common/services/pdf.service';
-import { taxReportQuerySchema } from '../tax/validation.schema';
-import type { TaxReportQueryInput } from '../tax/validation.schema';
+import { taxReportQuerySchema, taxReportExportSchema } from '../tax/validation.schema';
+import type { TaxReportQueryInput, TaxReportExportInput } from '../tax/validation.schema';
 
 @ApiTags('Tax Report')
 @ApiBearerAuth()
@@ -38,6 +38,7 @@ export class TaxReportController {
 
   @Get('export')
   @Roles('super_admin', 'manager')
+  @UsePipes(new ZodValidationPipe(taxReportExportSchema))
   @ApiOperation({ summary: 'Export tax report as CSV, XLSX, or PDF' })
   @ApiQuery({ name: 'period', required: false })
   @ApiQuery({ name: 'referenceDate', required: false })
@@ -49,7 +50,7 @@ export class TaxReportController {
   @ApiQuery({ name: 'quarter', required: false, description: 'Quarter 1-4. Only valid with period=quarter.' })
   @ApiQuery({ name: 'format', enum: ['csv', 'xlsx', 'pdf'], required: true })
   async export(
-    @Query() query: TaxReportQueryInput & { format: string },
+    @Query() query: TaxReportExportInput,
     @Res() res: Response,
   ) {
     const report = await this.taxReportService.getTaxReport(query);
@@ -218,7 +219,7 @@ export class TaxReportController {
             wp.id,
             wp.projectName,
             wp.clientName || '',
-            wp.projectDate,
+            wp.paidAt,
             wp.priceBeforeVat,
             wp.vatAmount,
             wp.totalPrice,
@@ -414,7 +415,7 @@ export class TaxReportController {
           [
             wp.projectName,
             wp.clientName || '-',
-            wp.projectDate,
+            wp.paidAt,
             Number(wp.priceBeforeVat),
             Number(wp.vatAmount),
             Number(wp.totalPrice),
@@ -463,7 +464,7 @@ export class TaxReportController {
 
     const projectRows = report.breakdown.workProjects.map((wp: any) => [
       wp.projectName,
-      wp.projectDate,
+      wp.paidAt,
       Number(wp.priceBeforeVat).toLocaleString(),
       Number(wp.vatAmount).toLocaleString(),
       Number(wp.totalPrice).toLocaleString(),
