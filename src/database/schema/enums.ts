@@ -45,3 +45,7 @@ export const platformEnum = pgEnum('platform', ['ios', 'android', 'web']);
 export const contactStatusEnum = pgEnum('contact_status', ['new', 'read', 'replied']);
 
 export const customerTypeEnum = pgEnum('customer_type', ['personal', 'business', 'government', 'bank']);
+
+export const proformaUnitEnum = pgEnum('proforma_unit', [
+  'PCS', 'M2', 'ML', 'SET', 'LOT', 'KG',
+]);

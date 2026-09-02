@@ -37,6 +37,7 @@ import { ProjectsToSellModule } from './modules/projects-to-sell/projects-to-sel
 import { GalleryProjectModule } from './modules/gallery-project/gallery-project.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
+import { ProformasModule } from './modules/proformas/proformas.module';
 import { TaxReportModule } from './modules/tax-report/tax-report.module';
 import { SearchModule } from './modules/search/search.module';
 import { BackupModule } from './backup/backup.module';
@@ -78,6 +79,7 @@ import { BackupModule } from './backup/backup.module';
     GalleryProjectModule,
     SuppliersModule,
     PurchasesModule,
+    ProformasModule,
     TaxReportModule,
     SearchModule,
     BackupModule,

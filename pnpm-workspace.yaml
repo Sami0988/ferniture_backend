@@ -1,0 +1,12 @@
+packages:
+  - "."
+
+allowBuilds:
+  bcrypt: true
+  esbuild: true
+  "@sentry/node-cpu-profiler": true
+  protobufjs: true
+  msgpackr-extract: true
+  "@firebase/util": true
+  "@scarf/scarf": true
+  unrs-resolver: true

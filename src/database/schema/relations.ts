@@ -17,6 +17,7 @@ import {
 } from './website.schema';
 import { suppliers } from './suppliers.schema';
 import { purchases, purchaseItems } from './purchases.schema';
+import { proformas, proformaItems } from './proformas.schema';
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   employeeProfile: one(employeeProfiles, {
@@ -52,6 +53,7 @@ export const customersRelations = relations(customers, ({ one, many }) => ({
   }),
   projects: many(projects),
   invoices: many(invoices),
+  proformas: many(proformas),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -76,6 +78,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   invoices: many(invoices),
   galleryImages: many(galleryImages),
   testimonials: many(testimonials),
+  proformas: many(proformas),
 }));
 
 export const projectAssigneesRelations = relations(projectAssignees, ({ one }) => ({
@@ -221,5 +224,28 @@ export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
   purchase: one(purchases, {
     fields: [purchaseItems.purchaseId],
     references: [purchases.id],
+  }),
+}));
+
+export const proformasRelations = relations(proformas, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [proformas.projectId],
+    references: [projects.id],
+  }),
+  customer: one(customers, {
+    fields: [proformas.customerId],
+    references: [customers.id],
+  }),
+  createdByUser: one(users, {
+    fields: [proformas.createdBy],
+    references: [users.id],
+  }),
+  items: many(proformaItems),
+}));
+
+export const proformaItemsRelations = relations(proformaItems, ({ one }) => ({
+  proforma: one(proformas, {
+    fields: [proformaItems.proformaId],
+    references: [proformas.id],
   }),
 }));
