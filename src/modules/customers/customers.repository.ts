@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and, ilike } from 'drizzle-orm';
-import { customers, projects, invoices, payments } from '../../database/schema';
+import { customers, projects, invoices, payments, proformas } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
 @Injectable()
@@ -67,6 +67,18 @@ export class CustomersRepository {
   }
 
   async delete(id: string) {
+    // 1. Delete proformas linked to this customer
+    await this.db.delete(proformas).where(eq(proformas.customerId, id));
+
+    // 2. Delete invoices linked directly to this customer (cascades invoiceItems, payments)
+    await this.db.delete(invoices).where(eq(invoices.customerId, id));
+
+    // 3. Delete projects linked to this customer
+    //    (cascades projectAssignees, projectAttachments, projectStatusHistory,
+    //     projectPayments, projectMaterials, and invoices via projectId)
+    await this.db.delete(projects).where(eq(projects.customerId, id));
+
+    // 4. Delete the customer
     await this.db.delete(customers).where(eq(customers.id, id));
   }
 
