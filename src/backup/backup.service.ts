@@ -3,24 +3,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as zlib from 'zlib';
-import * as crypto from 'crypto';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
-
-interface ServiceAccountKey {
-  type: string;
-  project_id: string;
-  private_key_id: string;
-  private_key: string;
-  client_email: string;
-  client_id: string;
-  auth_uri: string;
-  token_uri: string;
-  auth_provider_x509_cert_url: string;
-  client_x509_cert_url: string;
-}
 
 @Injectable()
 export class BackupService {
@@ -35,85 +21,8 @@ export class BackupService {
   private readonly refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN!;
   private readonly redirectUri = 'https://kassahun-backend.onrender.com/api/v1/backup/oauth/callback';
 
-  // OAuth token caching
   private accessToken: string = '';
   private tokenExpiry = 0;
-
-  // Service Account support
-  private serviceAccountKey: ServiceAccountKey | null = null;
-  private saAccessToken: string = '';
-  private saTokenExpiry = 0;
-
-  constructor() {
-    this.loadServiceAccountKey();
-  }
-
-  private loadServiceAccountKey(): void {
-    const keyJson = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-    if (keyJson) {
-      try {
-        this.serviceAccountKey = JSON.parse(keyJson) as ServiceAccountKey;
-        this.logger.log('Service account key loaded successfully');
-      } catch (error) {
-        this.logger.error('Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY:', (error as Error).message);
-        this.serviceAccountKey = null;
-      }
-    } else {
-      this.logger.warn('GOOGLE_SERVICE_ACCOUNT_KEY not set, falling back to OAuth');
-    }
-  }
-
-  private signJwt(claims: Record<string, any>): string {
-    const header = { alg: 'RS256', typ: 'JWT' };
-    const now = Math.floor(Date.now() / 1000);
-
-    const payload = { ...claims, iat: now, exp: now + 3600 };
-
-    const headerB64 = Buffer.from(JSON.stringify(header)).toString('base64url');
-    const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const signingInput = `${headerB64}.${payloadB64}`;
-
-    const sign = crypto.createSign('RSA-SHA256');
-    sign.update(signingInput);
-    const signature = sign.sign(this.serviceAccountKey!.private_key, 'base64url');
-
-    return `${signingInput}.${signature}`;
-  }
-
-  private async getServiceAccountAccessToken(): Promise<string> {
-    if (this.saAccessToken && Date.now() < this.saTokenExpiry) {
-      return this.saAccessToken;
-    }
-
-    if (!this.serviceAccountKey) {
-      throw new Error('Service account key not configured');
-    }
-
-    const jwt = this.signJwt({
-      iss: this.serviceAccountKey.client_email,
-      scope: 'https://www.googleapis.com/auth/drive.file',
-      aud: 'https://oauth2.googleapis.com/token',
-    });
-
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: jwt,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`Service account token exchange failed: ${await res.text()}`);
-    }
-
-    const data = await res.json();
-    this.saAccessToken = data.access_token;
-    this.saTokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
-    this.logger.log('Service account access token obtained');
-    return this.saAccessToken;
-  }
 
   getAuthorizeUrl(): string {
     const params = new URLSearchParams({
@@ -151,12 +60,6 @@ export class BackupService {
   }
 
   private async getAccessToken(): Promise<string> {
-    // Prefer service account if configured
-    if (this.serviceAccountKey) {
-      return this.getServiceAccountAccessToken();
-    }
-
-    // Fall back to OAuth
     if (this.accessToken && Date.now() < this.tokenExpiry) {
       return this.accessToken;
     }
@@ -182,14 +85,9 @@ export class BackupService {
     return this.accessToken;
   }
 
-  getAuthMethod(): string {
-    return this.serviceAccountKey ? 'service-account' : 'oauth';
-  }
-
   async runBackup(): Promise<void> {
     const dumpPath = await this.dumpDatabase();
     try {
-      this.logger.log(`Uploading backup using ${this.getAuthMethod()} authentication`);
       await this.uploadToDrive(dumpPath);
       await this.deleteOldBackups();
       this.logger.log('Backup completed and uploaded successfully');

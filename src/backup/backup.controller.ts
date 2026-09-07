@@ -40,19 +40,11 @@ export class BackupController {
     }
   }
 
-  @Get('status')
-  getStatus() {
-    return {
-      authMethod: this.backupService.getAuthMethod(),
-      hasDriveFolder: !!process.env.GOOGLE_DRIVE_BACKUP_FOLDER_ID,
-    };
-  }
-
   @Post('run')
   @Roles('admin')
   @UseGuards(JwtAuthGuard, RolesGuard)
   async triggerBackup() {
-    this.logger.log(`Manual backup triggered (auth: ${this.backupService.getAuthMethod()})`);
+    this.logger.log('Manual backup triggered');
     try {
       await this.backupService.runBackup();
       return { message: 'Backup completed successfully' };
