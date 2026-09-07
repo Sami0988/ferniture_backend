@@ -66,19 +66,30 @@ export class CustomersRepository {
     return updated;
   }
 
+  async getLinkedRecords(id: string) {
+    const [proformaCount] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(proformas)
+      .where(eq(proformas.customerId, id));
+
+    const [invoiceCount] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(invoices)
+      .where(eq(invoices.customerId, id));
+
+    const [projectCount] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(eq(projects.customerId, id));
+
+    return {
+      proformas: proformaCount?.count || 0,
+      invoices: invoiceCount?.count || 0,
+      projects: projectCount?.count || 0,
+    };
+  }
+
   async delete(id: string) {
-    // 1. Delete proformas linked to this customer
-    await this.db.delete(proformas).where(eq(proformas.customerId, id));
-
-    // 2. Delete invoices linked directly to this customer (cascades invoiceItems, payments)
-    await this.db.delete(invoices).where(eq(invoices.customerId, id));
-
-    // 3. Delete projects linked to this customer
-    //    (cascades projectAssignees, projectAttachments, projectStatusHistory,
-    //     projectPayments, projectMaterials, and invoices via projectId)
-    await this.db.delete(projects).where(eq(projects.customerId, id));
-
-    // 4. Delete the customer
     await this.db.delete(customers).where(eq(customers.id, id));
   }
 

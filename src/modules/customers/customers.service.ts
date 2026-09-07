@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CustomersRepository } from './customers.repository';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 import { UploadsService } from '../uploads/uploads.service';
@@ -38,7 +38,20 @@ export class CustomersService {
   }
 
   async delete(id: string) {
-    await this.findById(id);
+    const customer = await this.findById(id);
+
+    const linked = await this.repo.getLinkedRecords(id);
+    const linkedRecords: string[] = [];
+    if (linked.projects > 0) linkedRecords.push(`${linked.projects} project(s)`);
+    if (linked.invoices > 0) linkedRecords.push(`${linked.invoices} invoice(s)`);
+    if (linked.proformas > 0) linkedRecords.push(`${linked.proformas} proforma(s)`);
+
+    if (linkedRecords.length > 0) {
+      throw new BadRequestException(
+        `Cannot delete customer "${customer.fullName}" — it has linked records: ${linkedRecords.join(', ')}. Remove them first.`,
+      );
+    }
+
     await this.repo.delete(id);
   }
 
