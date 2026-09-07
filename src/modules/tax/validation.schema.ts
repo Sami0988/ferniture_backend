@@ -21,7 +21,7 @@ export const purchaseItemSchema = z.object({
 export const createPurchaseSchema = z.object({
   supplierId: z.string().uuid(),
   fsNumber: z.string().min(1).max(100),
-  bankTransactionNumber: z.string().max(100).optional(),
+  bankTransactionNumber: z.string().max(100).optional().nullable(),
   purchaseDate: z.string().date('Invalid date format (YYYY-MM-DD)'),
   items: z
     .array(purchaseItemSchema)
