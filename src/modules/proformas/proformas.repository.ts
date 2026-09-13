@@ -20,12 +20,10 @@ export class ProformasRepository {
 
   async generateProformaNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    const [result] = await this.db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(proformas)
-      .where(sql`EXTRACT(YEAR FROM ${proformas.createdAt}) = ${year}`);
-
-    const seq = String((result.count || 0) + 1).padStart(6, '0');
+    const [result] = await this.db.execute(
+      sql`SELECT nextval('proforma_number_seq') AS seq`,
+    );
+    const seq = String(result.seq).padStart(6, '0');
     return `KK-PF-${year}-${seq}`;
   }
 

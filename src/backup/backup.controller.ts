@@ -68,8 +68,8 @@ export class BackupController {
      res.status(202).json({ status: 'accepted', message: 'Backup started' });
 
      // Run backup asynchronously
-     this.backupService.runBackup().catch((err) => {
-       this.logger.error('Background backup failed:', err instanceof Error ? err.message : String(err));
-     });
+      this.backupService.runBackup().catch((err) => {
+        this.logger.error('Background backup failed:', err instanceof Error ? `${err.message}\n${err.stack}` : String(err));
+      });
    }
 }

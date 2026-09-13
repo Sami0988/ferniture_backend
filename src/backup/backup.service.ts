@@ -64,6 +64,12 @@ export class BackupService {
       return this.accessToken;
     }
 
+    this.logger.log('Refreshing Google OAuth access token');
+
+    if (!this.clientId || !this.clientSecret || !this.refreshToken) {
+      throw new Error(`Missing Google OAuth env vars - clientId: ${this.clientId ? 'set' : 'MISSING'}, clientSecret: ${this.clientSecret ? 'set' : 'MISSING'}, refreshToken: ${this.refreshToken ? 'set' : 'MISSING'}`);
+    }
+
     const res = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -75,22 +81,32 @@ export class BackupService {
       }),
     });
 
+    const responseBody = await res.text();
+    this.logger.log(`Token refresh response: ${res.status} ${res.statusText}`);
+
     if (!res.ok) {
-      throw new Error(`Token refresh failed: ${await res.text()}`);
+      throw new Error(`Token refresh failed (${res.status}): ${responseBody}`);
     }
 
-    const data = await res.json();
+    const data = JSON.parse(responseBody);
     this.accessToken = data.access_token;
     this.tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+    this.logger.log('Google OAuth access token refreshed successfully');
     return this.accessToken;
   }
 
   async runBackup(): Promise<void> {
     const dumpPath = await this.dumpDatabase();
     try {
+      this.logger.log('Attempting to upload backup to Google Drive');
       await this.uploadToDrive(dumpPath);
+      this.logger.log('Upload to Google Drive successful, cleaning up old backups');
       await this.deleteOldBackups();
       this.logger.log('Backup completed and uploaded successfully');
+    } catch (err) {
+      this.logger.error(`Backup pipeline failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(`Full error stack: ${err instanceof Error ? err.stack : 'N/A'}`);
+      throw err;
     } finally {
       if (fs.existsSync(dumpPath)) fs.unlinkSync(dumpPath);
     }
