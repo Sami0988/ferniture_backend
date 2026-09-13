@@ -27,7 +27,7 @@ async function bootstrap() {
   app.use(compression());
 
   // CORS
-  const corsOrigin = process.env.CORS_ORIGIN || '';
+  const corsOrigin = process.env.CORS_ORIGIN || '*';
   const allowedOrigins = corsOrigin
     .split(',')
     .map((o) => o.trim().replace(/\/+$/, ''))
