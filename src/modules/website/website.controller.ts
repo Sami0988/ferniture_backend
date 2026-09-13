@@ -65,6 +65,7 @@ export class PublicGalleryController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List gallery images' })
   @ApiQuery({ name: 'division', required: false })
   findAll(@Query('division') division?: string, @Query() pagination: PaginationDto = new PaginationDto()) {
@@ -72,6 +73,7 @@ export class PublicGalleryController {
   }
 
   @Get('featured')
+  @Public()
   @ApiOperation({ summary: 'Featured gallery images' })
   findFeatured() {
     return this.websiteService.getFeaturedGallery();
@@ -107,18 +109,21 @@ export class PublicTestimonialsController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List approved testimonials' })
   findAll(@Query() pagination: PaginationDto) {
     return this.websiteService.getTestimonialsPaginated(pagination, true);
   }
 
   @Get('featured')
+  @Public()
   @ApiOperation({ summary: 'Featured testimonials' })
   findFeatured() {
     return this.websiteService.getFeaturedTestimonials();
   }
 
   @Post()
+  @Public()
   @ApiOperation({ summary: 'Submit a testimonial' })
   create(@Body() dto: CreateTestimonialDto) {
     return this.websiteService.createTestimonial(dto);
@@ -131,6 +136,7 @@ export class PublicContactController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Post()
+  @Public()
   @ApiOperation({ summary: 'Submit a contact message' })
   create(@Body() dto: CreateContactMessageDto) {
     return this.websiteService.submitContactMessage(dto);
@@ -143,6 +149,7 @@ export class PublicQuotesController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Post()
+  @Public()
   @ApiOperation({ summary: 'Submit a quote request' })
   create(@Body() dto: CreateQuoteRequestDto) {
     return this.websiteService.submitQuoteRequest(dto);
@@ -155,6 +162,7 @@ export class PublicFaqsController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List FAQs' })
   findAll(@Query() pagination: PaginationDto) {
     return this.websiteService.getPublicFaqs();
@@ -421,6 +429,7 @@ export class PublicBlogController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List published blog posts' })
   @ApiQuery({ name: 'category', required: false })
   findAll(@Query('category') category?: string) {
@@ -428,6 +437,7 @@ export class PublicBlogController {
   }
 
   @Get(':slug')
+  @Public()
   @ApiOperation({ summary: 'Get blog post by slug' })
   findBySlug(@Param('slug') slug: string) {
     return this.websiteService.getBlogPostBySlug(slug);
@@ -549,6 +559,7 @@ export class PublicAboutController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get about page content' })
   getAboutPage() {
     return this.websiteService.getAboutPage();
@@ -586,6 +597,7 @@ export class AdminAboutController {
         projectsCompleted: { type: 'number' },
         countriesServed: { type: 'number' },
         skilledArtisans: { type: 'number' },
+        imageUrl: { type: 'string', description: 'Image URL (alternative to file upload)' },
         image: { type: 'string', format: 'binary' },
       },
     },
@@ -606,6 +618,7 @@ export class PublicServicesController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List active services' })
   findAll() {
     return this.websiteService.getPublicServices();
@@ -727,6 +740,7 @@ export class PublicBeforeAfterController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List active before & after pairs' })
   findAll() {
     return this.websiteService.getPublicBeforeAfter();
@@ -838,6 +852,7 @@ export class PublicContactInfoController {
   constructor(private readonly websiteService: WebsiteService) {}
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'Get contact info (address, phones, hours, map)' })
   getContactInfo() {
     return this.websiteService.getContactInfo();

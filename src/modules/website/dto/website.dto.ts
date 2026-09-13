@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsEnum, IsBoolean, MaxLength, IsArray, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateContactMessageDto {
@@ -294,22 +295,31 @@ export class UpdateAboutPageDto {
   @ApiPropertyOptional({ example: 15 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   yearsOfExperience?: number;
 
   @ApiPropertyOptional({ example: 500 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   projectsCompleted?: number;
 
   @ApiPropertyOptional({ example: 5 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   countriesServed?: number;
 
   @ApiPropertyOptional({ example: 30 })
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   skilledArtisans?: number;
+
+  @ApiPropertyOptional({ example: 'https://cloudinary.com/...' })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
 
 export class CreateServiceDto {
