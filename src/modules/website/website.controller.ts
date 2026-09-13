@@ -1,9 +1,9 @@
 import {
   Controller, Get, Post, Put, Patch, Delete,
   Body, Param, Query, UseInterceptors,
-  UploadedFiles, Header,
+  UploadedFiles, UploadedFile, Header,
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -15,6 +15,11 @@ import {
   CreateProductDto,
   CreateGalleryImageDto,
   CreateFaqDto,
+  CreateBlogPostDto,
+  UpdateAboutPageDto,
+  CreateServiceDto,
+  CreateBeforeAfterDto,
+  UpdateContactInfoDto,
 } from './dto/website.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -405,5 +410,459 @@ export class AdminFaqsController {
   @ApiOperation({ summary: 'Delete FAQ' })
   remove(@Param('id') id: string) {
     return this.websiteService.deleteFaq(id);
+  }
+}
+
+// ==================== PUBLIC BLOG ====================
+
+@ApiTags('Website - Blog')
+@Controller('website/blog')
+export class PublicBlogController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List published blog posts' })
+  @ApiQuery({ name: 'category', required: false })
+  findAll(@Query('category') category?: string) {
+    return this.websiteService.getPublicBlogPosts(category);
+  }
+
+  @Get(':slug')
+  @ApiOperation({ summary: 'Get blog post by slug' })
+  findBySlug(@Param('slug') slug: string) {
+    return this.websiteService.getBlogPostBySlug(slug);
+  }
+}
+
+// ==================== ADMIN BLOG ====================
+
+@ApiTags('Admin - Blog')
+@ApiBearerAuth()
+@Controller('admin/blog')
+export class AdminBlogController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'List all blog posts (admin)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'category', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ) {
+    const pagination = { page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20 };
+    return this.websiteService.getAllBlogPostsPaginated(pagination, { category, search });
+  }
+
+  @Get(':id')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Get blog post by ID (admin)' })
+  findOne(@Param('id') id: string) {
+    return this.websiteService.getBlogPostById(id);
+  }
+
+  @Post()
+  @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'mainImage', maxCount: 1 },
+    { name: 'featureImages', maxCount: 5 },
+  ]))
+  @ApiOperation({ summary: 'Create blog post' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        slug: { type: 'string' },
+        excerpt: { type: 'string' },
+        content: { type: 'string' },
+        category: { type: 'string', enum: ['materials', 'aluminum', 'interior', 'furniture', 'general'] },
+        isPublished: { type: 'boolean' },
+        mainImage: { type: 'string', format: 'binary' },
+        featureImages: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 5 },
+      },
+    },
+  })
+  create(
+    @Body() dto: CreateBlogPostDto,
+    @UploadedFiles() files: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.createBlogPost(dto, {
+      mainImage: files?.mainImage?.[0],
+      featureImages: files?.featureImages,
+    });
+  }
+
+  @Patch(':id')
+  @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'mainImage', maxCount: 1 },
+    { name: 'featureImages', maxCount: 5 },
+  ]))
+  @ApiOperation({ summary: 'Update blog post' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        slug: { type: 'string' },
+        excerpt: { type: 'string' },
+        content: { type: 'string' },
+        category: { type: 'string', enum: ['materials', 'aluminum', 'interior', 'furniture', 'general'] },
+        isPublished: { type: 'boolean' },
+        mainImage: { type: 'string', format: 'binary' },
+        featureImages: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 5 },
+      },
+    },
+  })
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateBlogPostDto>,
+    @UploadedFiles() files: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.updateBlogPost(id, dto, {
+      mainImage: files?.mainImage?.[0],
+      featureImages: files?.featureImages,
+    });
+  }
+
+  @Delete(':id')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Delete blog post' })
+  remove(@Param('id') id: string) {
+    return this.websiteService.deleteBlogPost(id);
+  }
+}
+
+// ==================== PUBLIC ABOUT ====================
+
+@ApiTags('Website - About')
+@Controller('website/about')
+export class PublicAboutController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get about page content' })
+  getAboutPage() {
+    return this.websiteService.getAboutPage();
+  }
+}
+
+// ==================== ADMIN ABOUT ====================
+
+@ApiTags('Admin - About')
+@ApiBearerAuth()
+@Controller('admin/about')
+export class AdminAboutController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Get about page content (admin)' })
+  getAboutPage() {
+    return this.websiteService.getAboutPage();
+  }
+
+  @Patch()
+  @Roles('super_admin', 'manager')
+  @UseInterceptors(FileInterceptor('image'))
+  @ApiOperation({ summary: 'Update about page' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        description1: { type: 'string' },
+        description2: { type: 'string' },
+        yearsOfExperience: { type: 'number' },
+        projectsCompleted: { type: 'number' },
+        countriesServed: { type: 'number' },
+        skilledArtisans: { type: 'number' },
+        image: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  update(
+    @Body() dto: UpdateAboutPageDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.websiteService.updateAboutPage(dto, file);
+  }
+}
+
+// ==================== PUBLIC SERVICES ====================
+
+@ApiTags('Website - Services')
+@Controller('website/services')
+export class PublicServicesController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List active services' })
+  findAll() {
+    return this.websiteService.getPublicServices();
+  }
+}
+
+// ==================== ADMIN SERVICES ====================
+
+@ApiTags('Admin - Services')
+@ApiBearerAuth()
+@Controller('admin/services')
+export class AdminServicesController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'List all services (admin)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'category', required: false })
+  @ApiQuery({ name: 'search', required: false })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('search') search?: string,
+  ) {
+    const pagination = { page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20 };
+    return this.websiteService.getAllServicesPaginated(pagination, { category, search });
+  }
+
+  @Get(':id')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Get service by ID (admin)' })
+  findOne(@Param('id') id: string) {
+    return this.websiteService.getServiceById(id);
+  }
+
+  @Post()
+  @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'mainImage', maxCount: 1 },
+    { name: 'featureImages', maxCount: 5 },
+  ]))
+  @ApiOperation({ summary: 'Create service' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        category: { type: 'string' },
+        description: { type: 'string' },
+        bulletPoints: { type: 'array', items: { type: 'string' } },
+        sortOrder: { type: 'number' },
+        isActive: { type: 'boolean' },
+        mainImage: { type: 'string', format: 'binary' },
+        featureImages: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 5 },
+      },
+    },
+  })
+  create(
+    @Body() dto: CreateServiceDto,
+    @UploadedFiles() files: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.createService(dto, {
+      mainImage: files?.mainImage?.[0],
+      featureImages: files?.featureImages,
+    });
+  }
+
+  @Patch(':id')
+  @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'mainImage', maxCount: 1 },
+    { name: 'featureImages', maxCount: 5 },
+  ]))
+  @ApiOperation({ summary: 'Update service' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        category: { type: 'string' },
+        description: { type: 'string' },
+        bulletPoints: { type: 'array', items: { type: 'string' } },
+        sortOrder: { type: 'number' },
+        isActive: { type: 'boolean' },
+        mainImage: { type: 'string', format: 'binary' },
+        featureImages: { type: 'array', items: { type: 'string', format: 'binary' }, maxItems: 5 },
+      },
+    },
+  })
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateServiceDto>,
+    @UploadedFiles() files: { mainImage?: Express.Multer.File[]; featureImages?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.updateService(id, dto, {
+      mainImage: files?.mainImage?.[0],
+      featureImages: files?.featureImages,
+    });
+  }
+
+  @Delete(':id')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Delete service' })
+  remove(@Param('id') id: string) {
+    return this.websiteService.deleteService(id);
+  }
+}
+
+// ==================== PUBLIC BEFORE & AFTER ====================
+
+@ApiTags('Website - Before & After')
+@Controller('website/before-after')
+export class PublicBeforeAfterController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'List active before & after pairs' })
+  findAll() {
+    return this.websiteService.getPublicBeforeAfter();
+  }
+}
+
+// ==================== ADMIN BEFORE & AFTER ====================
+
+@ApiTags('Admin - Before & After')
+@ApiBearerAuth()
+@Controller('admin/before-after')
+export class AdminBeforeAfterController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'List all before & after (admin)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pagination = { page: page ? parseInt(page) : 1, limit: limit ? parseInt(limit) : 20 };
+    return this.websiteService.getAllBeforeAfterPaginated(pagination);
+  }
+
+  @Get(':id')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Get before & after by ID' })
+  findOne(@Param('id') id: string) {
+    return this.websiteService.getBeforeAfterById(id);
+  }
+
+  @Post()
+  @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'beforeImage', maxCount: 1 },
+    { name: 'afterImage', maxCount: 1 },
+  ]))
+  @ApiOperation({ summary: 'Create before & after pair' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        sortOrder: { type: 'number' },
+        isActive: { type: 'boolean' },
+        beforeImage: { type: 'string', format: 'binary' },
+        afterImage: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  create(
+    @Body() dto: CreateBeforeAfterDto,
+    @UploadedFiles() files: { beforeImage?: Express.Multer.File[]; afterImage?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.createBeforeAfter(dto, {
+      beforeImage: files?.beforeImage?.[0],
+      afterImage: files?.afterImage?.[0],
+    });
+  }
+
+  @Patch(':id')
+  @Roles('super_admin', 'manager')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'beforeImage', maxCount: 1 },
+    { name: 'afterImage', maxCount: 1 },
+  ]))
+  @ApiOperation({ summary: 'Update before & after pair' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string' },
+        sortOrder: { type: 'number' },
+        isActive: { type: 'boolean' },
+        beforeImage: { type: 'string', format: 'binary' },
+        afterImage: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  update(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateBeforeAfterDto>,
+    @UploadedFiles() files: { beforeImage?: Express.Multer.File[]; afterImage?: Express.Multer.File[] },
+  ) {
+    return this.websiteService.updateBeforeAfter(id, dto, {
+      beforeImage: files?.beforeImage?.[0],
+      afterImage: files?.afterImage?.[0],
+    });
+  }
+
+  @Delete(':id')
+  @Roles('super_admin')
+  @ApiOperation({ summary: 'Delete before & after pair' })
+  remove(@Param('id') id: string) {
+    return this.websiteService.deleteBeforeAfter(id);
+  }
+}
+
+// ==================== PUBLIC CONTACT INFO ====================
+
+@ApiTags('Website - Contact Info')
+@Controller('website/contact-info')
+export class PublicContactInfoController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get contact info (address, phones, hours, map)' })
+  getContactInfo() {
+    return this.websiteService.getContactInfo();
+  }
+}
+
+// ==================== ADMIN CONTACT INFO ====================
+
+@ApiTags('Admin - Contact Info')
+@ApiBearerAuth()
+@Controller('admin/contact-info')
+export class AdminContactInfoController {
+  constructor(private readonly websiteService: WebsiteService) {}
+
+  @Get()
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Get contact info (admin)' })
+  getContactInfo() {
+    return this.websiteService.getContactInfo();
+  }
+
+  @Patch()
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Update contact info' })
+  update(@Body() dto: UpdateContactInfoDto) {
+    return this.websiteService.updateContactInfo(dto);
   }
 }

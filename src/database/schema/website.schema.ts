@@ -1,19 +1,26 @@
 import { pgTable, uuid, varchar, text, smallint, integer, boolean, timestamp, jsonb, numeric, index } from 'drizzle-orm/pg-core';
-import { divisionEnum, contactStatusEnum } from './enums';
+import { divisionEnum, contactStatusEnum, blogCategoryEnum } from './enums';
 import { projects } from './projects.schema';
 import { materials } from './materials.schema';
 
-export const testimonials = pgTable('testimonials', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  customerName: varchar('customer_name', { length: 150 }).notNull(),
-  projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
-  rating: smallint('rating').notNull(),
-  reviewText: text('review_text').notNull(),
-  imageUrl: text('image_url'),
-  isFeatured: boolean('is_featured').notNull().default(false),
-  isApproved: boolean('is_approved').notNull().default(false),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const testimonials = pgTable(
+  'testimonials',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    customerName: varchar('customer_name', { length: 150 }).notNull(),
+    company: varchar('company', { length: 200 }),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }),
+    rating: numeric('rating', { precision: 2, scale: 1 }).notNull(),
+    reviewText: text('review_text').notNull(),
+    imageUrl: text('image_url'),
+    isFeatured: boolean('is_featured').notNull().default(false),
+    isApproved: boolean('is_approved').notNull().default(false),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    approvedIdx: index('testimonial_approved_idx').on(table.isApproved),
+  }),
+);
 
 export const galleryImages = pgTable(
   'gallery_images',
@@ -86,5 +93,98 @@ export const faqs = pgTable('faqs', {
   answer: text('answer').notNull(),
   sortOrder: integer('sort_order').default(0),
   isActive: boolean('is_active').notNull().default(true),
+}, (table) => ({
+  faqActiveIdx: index('faq_active_idx').on(table.isActive),
+  faqSortIdx: index('faq_sort_idx').on(table.sortOrder),
+}));
+
+export const blogPosts = pgTable(
+  'blog_posts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: varchar('title', { length: 250 }).notNull(),
+    slug: varchar('slug', { length: 280 }).notNull().unique(),
+    excerpt: varchar('excerpt', { length: 500 }),
+    content: text('content').notNull(),
+    category: blogCategoryEnum('category').notNull().default('general'),
+    coverImage: text('cover_image').notNull(),
+    featureImages: jsonb('feature_images').$type<string[]>().default([]),
+    isPublished: boolean('is_published').notNull().default(false),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    blogSlugIdx: index('blog_slug_idx').on(table.slug),
+    blogCategoryIdx: index('blog_category_idx').on(table.category),
+    blogPublishedIdx: index('blog_published_idx').on(table.isPublished),
+    blogCreatedIdx: index('blog_created_idx').on(table.publishedAt),
+  }),
+);
+
+export const aboutPage = pgTable('about_page', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  title: varchar('title', { length: 250 }).notNull().default('About Us'),
+  description1: text('description1').notNull().default(''),
+  description2: text('description2').notNull().default(''),
+  imageUrl: text('image_url'),
+  yearsOfExperience: integer('years_of_experience').notNull().default(0),
+  projectsCompleted: integer('projects_completed').notNull().default(0),
+  countriesServed: integer('countries_served').notNull().default(0),
+  skilledArtisans: integer('skilled_artisans').notNull().default(0),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const services = pgTable(
+  'services',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: varchar('title', { length: 200 }).notNull(),
+    category: varchar('category', { length: 50 }).notNull(),
+    description: text('description').notNull(),
+    bulletPoints: jsonb('bullet_points').$type<string[]>().default([]),
+    coverImage: text('cover_image').notNull(),
+    featureImages: jsonb('feature_images').$type<string[]>().default([]),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    serviceActiveIdx: index('service_active_idx').on(table.isActive),
+    serviceSortIdx: index('service_sort_idx').on(table.sortOrder),
+    serviceCategoryIdx: index('service_category_idx').on(table.category),
+  }),
+);
+
+export const beforeAfter = pgTable(
+  'before_after',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    title: varchar('title', { length: 200 }),
+    beforeImage: text('before_image').notNull(),
+    afterImage: text('after_image').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    baActiveIdx: index('ba_active_idx').on(table.isActive),
+    baSortIdx: index('ba_sort_idx').on(table.sortOrder),
+  }),
+);
+
+export const contactInfo = pgTable('contact_info', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  address: varchar('address', { length: 500 }).notNull().default(''),
+  phone1: varchar('phone1', { length: 30 }).notNull().default(''),
+  phone2: varchar('phone2', { length: 30 }),
+  email: varchar('email', { length: 200 }).notNull().default(''),
+  weekdayHours: varchar('weekday_hours', { length: 100 }).notNull().default('Mon – Fri: 8:00 AM – 6:00 PM'),
+  saturdayHours: varchar('saturday_hours', { length: 100 }).notNull().default('Sat: 8:00 AM – 1:00 PM'),
+  mapUrl: text('map_url'),
+  latitude: varchar('latitude', { length: 30 }),
+  longitude: varchar('longitude', { length: 30 }),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 

@@ -3,7 +3,7 @@ import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, and, sql, ilike } from 'drizzle-orm';
 import {
   products, galleryImages, testimonials,
-  contactMessages, quoteRequests, faqs, materials, projects,
+  contactMessages, quoteRequests, faqs, materials, projects, blogPosts, aboutPage, services, beforeAfter, contactInfo,
 } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
@@ -442,5 +442,234 @@ export class WebsiteRepository {
 
   async deleteFaq(id: string) {
     await this.db.delete(faqs).where(eq(faqs.id, id));
+  }
+
+  // --- Blog Posts ---
+  async findPublishedBlogPosts(category?: string): Promise<any[]> {
+    const conditions = [eq(blogPosts.isPublished, true)];
+    if (category) conditions.push(eq(blogPosts.category, category as any));
+    return this.db
+      .select()
+      .from(blogPosts)
+      .where(and(...conditions))
+      .orderBy(desc(blogPosts.publishedAt));
+  }
+
+  async findBlogPostBySlug(slug: string): Promise<any> {
+    const [post] = await this.db
+      .select()
+      .from(blogPosts)
+      .where(eq(blogPosts.slug, slug));
+    return post || null;
+  }
+
+  async findBlogPostById(id: string): Promise<any> {
+    const [post] = await this.db
+      .select()
+      .from(blogPosts)
+      .where(eq(blogPosts.id, id));
+    return post || null;
+  }
+
+  async findAllBlogPostsPaginated(pagination: PaginationDto, filters?: { category?: string; search?: string }): Promise<PaginatedResult<any>> {
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
+    const offset = (page - 1) * limit;
+
+    const conditions: any[] = [];
+    if (filters?.category) conditions.push(eq(blogPosts.category, filters.category as any));
+    if (filters?.search) conditions.push(ilike(blogPosts.title, `%${filters.search}%`));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(blogPosts)
+      .where(where as any);
+
+    const data = await this.db
+      .select()
+      .from(blogPosts)
+      .where(where)
+      .orderBy(desc(blogPosts.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
+  }
+
+  async createBlogPost(data: any) {
+    const [post] = await this.db.insert(blogPosts).values(data).returning();
+    return post;
+  }
+
+  async updateBlogPost(id: string, data: any) {
+    const [updated] = await this.db
+      .update(blogPosts)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(blogPosts.id, id))
+      .returning();
+    if (!updated) throw new NotFoundException('Blog post not found');
+    return updated;
+  }
+
+  async deleteBlogPost(id: string) {
+    await this.db.delete(blogPosts).where(eq(blogPosts.id, id));
+  }
+
+  // --- About Page ---
+  async getAboutPage(): Promise<any> {
+    const [row] = await this.db.select().from(aboutPage).limit(1);
+    return row || null;
+  }
+
+  async upsertAboutPage(data: any): Promise<any> {
+    const existing = await this.getAboutPage();
+    if (existing) {
+      const [updated] = await this.db
+        .update(aboutPage)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(aboutPage.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await this.db.insert(aboutPage).values(data).returning();
+    return created;
+  }
+
+  // --- Services ---
+  async findPublicServices(): Promise<any[]> {
+    return this.db
+      .select()
+      .from(services)
+      .where(eq(services.isActive, true))
+      .orderBy(services.sortOrder);
+  }
+
+  async findServiceById(id: string): Promise<any> {
+    const [service] = await this.db
+      .select()
+      .from(services)
+      .where(eq(services.id, id));
+    return service || null;
+  }
+
+  async findAllServicesPaginated(pagination: PaginationDto, filters?: { category?: string; search?: string }): Promise<PaginatedResult<any>> {
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
+    const offset = (page - 1) * limit;
+
+    const conditions: any[] = [];
+    if (filters?.category) conditions.push(eq(services.category, filters.category));
+    if (filters?.search) conditions.push(ilike(services.title, `%${filters.search}%`));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(services)
+      .where(where as any);
+
+    const data = await this.db
+      .select()
+      .from(services)
+      .where(where)
+      .orderBy(services.sortOrder)
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
+  }
+
+  async createService(data: any) {
+    const [service] = await this.db.insert(services).values(data).returning();
+    return service;
+  }
+
+  async updateService(id: string, data: any) {
+    const [updated] = await this.db
+      .update(services)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(services.id, id))
+      .returning();
+    if (!updated) throw new NotFoundException('Service not found');
+    return updated;
+  }
+
+  async deleteService(id: string) {
+    await this.db.delete(services).where(eq(services.id, id));
+  }
+
+  // --- Before & After ---
+  async findPublicBeforeAfter(): Promise<any[]> {
+    return this.db
+      .select()
+      .from(beforeAfter)
+      .where(eq(beforeAfter.isActive, true))
+      .orderBy(beforeAfter.sortOrder);
+  }
+
+  async findBeforeAfterById(id: string): Promise<any> {
+    const [item] = await this.db
+      .select()
+      .from(beforeAfter)
+      .where(eq(beforeAfter.id, id));
+    return item || null;
+  }
+
+  async findAllBeforeAfterPaginated(pagination: PaginationDto): Promise<PaginatedResult<any>> {
+    const page = Math.max(1, Number(pagination.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));
+    const offset = (page - 1) * limit;
+
+    const [countResult] = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(beforeAfter);
+
+    const data = await this.db
+      .select()
+      .from(beforeAfter)
+      .orderBy(beforeAfter.sortOrder)
+      .limit(limit)
+      .offset(offset);
+
+    return new PaginatedResult(data, countResult.count, page, limit);
+  }
+
+  async createBeforeAfter(data: any) {
+    const [item] = await this.db.insert(beforeAfter).values(data).returning();
+    return item;
+  }
+
+  async updateBeforeAfter(id: string, data: any) {
+    const [updated] = await this.db
+      .update(beforeAfter)
+      .set(data)
+      .where(eq(beforeAfter.id, id))
+      .returning();
+    if (!updated) throw new NotFoundException('Before & After not found');
+    return updated;
+  }
+
+  async deleteBeforeAfter(id: string) {
+    await this.db.delete(beforeAfter).where(eq(beforeAfter.id, id));
+  }
+
+  // --- Contact Info ---
+  async getContactInfo(): Promise<any> {
+    const [row] = await this.db.select().from(contactInfo).limit(1);
+    return row || null;
+  }
+
+  async upsertContactInfo(data: any): Promise<any> {
+    const existing = await this.getContactInfo();
+    if (existing) {
+      const [updated] = await this.db
+        .update(contactInfo)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(contactInfo.id, existing.id))
+        .returning();
+      return updated;
+    }
+    const [created] = await this.db.insert(contactInfo).values(data).returning();
+    return created;
   }
 }

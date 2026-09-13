@@ -49,3 +49,7 @@ export const customerTypeEnum = pgEnum('customer_type', ['personal', 'business',
 export const proformaUnitEnum = pgEnum('proforma_unit', [
   'PCS', 'M2', 'ML', 'SET', 'LOT', 'KG',
 ]);
+
+export const blogCategoryEnum = pgEnum('blog_category', [
+  'materials', 'aluminum', 'interior', 'furniture', 'general',
+]);

@@ -383,4 +383,237 @@ export class WebsiteService {
     await this.cache.del('faqs:all');
     await this.repo.deleteFaq(id);
   }
+
+  // Blog Posts
+  async getPublicBlogPosts(category?: string) {
+    const cacheKey = `blog:${category || 'all'}`;
+    let posts = await this.cache.get<any[]>(cacheKey);
+    if (!posts) {
+      posts = await this.repo.findPublishedBlogPosts(category);
+      await this.cache.set(cacheKey, posts, 300);
+    }
+    return posts;
+  }
+
+  async getBlogPostBySlug(slug: string) {
+    const post = await this.repo.findBlogPostBySlug(slug);
+    if (!post) throw new NotFoundException('Blog post not found');
+    return post;
+  }
+
+  async getBlogPostById(id: string) {
+    const post = await this.repo.findBlogPostById(id);
+    if (!post) throw new NotFoundException('Blog post not found');
+    return post;
+  }
+
+  async getAllBlogPostsPaginated(pagination: PaginationDto, filters?: { category?: string; search?: string }) {
+    return this.repo.findAllBlogPostsPaginated(pagination, filters);
+  }
+
+  async createBlogPost(data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
+    if (files?.mainImage) {
+      const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/blog');
+      data.coverImage = url;
+    }
+    if (files?.featureImages?.length) {
+      const uploadPromises = files.featureImages.map(f => this.uploadsService.uploadImage(f, 'kassahun/blog/features'));
+      const results = await Promise.all(uploadPromises);
+      data.featureImages = results.map(r => r.url);
+    }
+
+    if (!data.slug) {
+      data.slug = data.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    if (data.isPublished && !data.publishedAt) {
+      data.publishedAt = new Date();
+    }
+
+    await this.cache.del('blog:all');
+    return this.repo.createBlogPost(data);
+  }
+
+  async updateBlogPost(id: string, data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
+    await this.getBlogPostById(id);
+
+    if (files?.mainImage) {
+      const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/blog');
+      data.coverImage = url;
+    }
+    if (files?.featureImages?.length) {
+      const uploadPromises = files.featureImages.map(f => this.uploadsService.uploadImage(f, 'kassahun/blog/features'));
+      const results = await Promise.all(uploadPromises);
+      data.featureImages = results.map(r => r.url);
+    }
+
+    if (data.title && !data.slug) {
+      data.slug = data.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+    }
+
+    if (data.isPublished === true && !data.publishedAt) {
+      data.publishedAt = new Date();
+    }
+
+    await this.cache.del('blog:all');
+    return this.repo.updateBlogPost(id, data);
+  }
+
+  async deleteBlogPost(id: string) {
+    await this.getBlogPostById(id);
+    await this.cache.del('blog:all');
+    await this.repo.deleteBlogPost(id);
+  }
+
+  // About Page
+  async getAboutPage() {
+    const cacheKey = 'about:page';
+    let about = await this.cache.get<any>(cacheKey);
+    if (!about) {
+      about = await this.repo.getAboutPage();
+      if (about) await this.cache.set(cacheKey, about, 600);
+    }
+    return about;
+  }
+
+  async updateAboutPage(data: any, file?: Express.Multer.File) {
+    if (file) {
+      const { url } = await this.uploadsService.uploadImage(file, 'kassahun/about');
+      data.imageUrl = url;
+    }
+    await this.cache.del('about:page');
+    return this.repo.upsertAboutPage(data);
+  }
+
+  // Services
+  async getPublicServices() {
+    const cacheKey = 'services:all';
+    let items = await this.cache.get<any[]>(cacheKey);
+    if (!items) {
+      items = await this.repo.findPublicServices();
+      await this.cache.set(cacheKey, items, 300);
+    }
+    return items;
+  }
+
+  async getServiceById(id: string) {
+    const service = await this.repo.findServiceById(id);
+    if (!service) throw new NotFoundException('Service not found');
+    return service;
+  }
+
+  async getAllServicesPaginated(pagination: PaginationDto, filters?: { category?: string; search?: string }) {
+    return this.repo.findAllServicesPaginated(pagination, filters);
+  }
+
+  async createService(data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
+    if (files?.mainImage) {
+      const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
+      data.coverImage = url;
+    }
+    if (files?.featureImages?.length) {
+      const uploadPromises = files.featureImages.map(f => this.uploadsService.uploadImage(f, 'kassahun/services/features'));
+      const results = await Promise.all(uploadPromises);
+      data.featureImages = results.map(r => r.url);
+    }
+    await this.cache.del('services:all');
+    return this.repo.createService(data);
+  }
+
+  async updateService(id: string, data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
+    await this.getServiceById(id);
+    if (files?.mainImage) {
+      const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
+      data.coverImage = url;
+    }
+    if (files?.featureImages?.length) {
+      const uploadPromises = files.featureImages.map(f => this.uploadsService.uploadImage(f, 'kassahun/services/features'));
+      const results = await Promise.all(uploadPromises);
+      data.featureImages = results.map(r => r.url);
+    }
+    await this.cache.del('services:all');
+    return this.repo.updateService(id, data);
+  }
+
+  async deleteService(id: string) {
+    await this.getServiceById(id);
+    await this.cache.del('services:all');
+    await this.repo.deleteService(id);
+  }
+
+  // Before & After
+  async getPublicBeforeAfter() {
+    const cacheKey = 'beforeAfter:all';
+    let items = await this.cache.get<any[]>(cacheKey);
+    if (!items) {
+      items = await this.repo.findPublicBeforeAfter();
+      await this.cache.set(cacheKey, items, 300);
+    }
+    return items;
+  }
+
+  async getBeforeAfterById(id: string) {
+    const item = await this.repo.findBeforeAfterById(id);
+    if (!item) throw new NotFoundException('Before & After not found');
+    return item;
+  }
+
+  async getAllBeforeAfterPaginated(pagination: PaginationDto) {
+    return this.repo.findAllBeforeAfterPaginated(pagination);
+  }
+
+  async createBeforeAfter(data: any, files?: { beforeImage?: Express.Multer.File; afterImage?: Express.Multer.File }) {
+    if (files?.beforeImage) {
+      const { url } = await this.uploadsService.uploadImage(files.beforeImage, 'kassahun/before-after');
+      data.beforeImage = url;
+    }
+    if (files?.afterImage) {
+      const { url } = await this.uploadsService.uploadImage(files.afterImage, 'kassahun/before-after');
+      data.afterImage = url;
+    }
+    await this.cache.del('beforeAfter:all');
+    return this.repo.createBeforeAfter(data);
+  }
+
+  async updateBeforeAfter(id: string, data: any, files?: { beforeImage?: Express.Multer.File; afterImage?: Express.Multer.File }) {
+    await this.getBeforeAfterById(id);
+    if (files?.beforeImage) {
+      const { url } = await this.uploadsService.uploadImage(files.beforeImage, 'kassahun/before-after');
+      data.beforeImage = url;
+    }
+    if (files?.afterImage) {
+      const { url } = await this.uploadsService.uploadImage(files.afterImage, 'kassahun/before-after');
+      data.afterImage = url;
+    }
+    await this.cache.del('beforeAfter:all');
+    return this.repo.updateBeforeAfter(id, data);
+  }
+
+  async deleteBeforeAfter(id: string) {
+    await this.getBeforeAfterById(id);
+    await this.cache.del('beforeAfter:all');
+    await this.repo.deleteBeforeAfter(id);
+  }
+
+  // Contact Info
+  async getContactInfo() {
+    const cacheKey = 'contact:info';
+    let info = await this.cache.get<any>(cacheKey);
+    if (!info) {
+      info = await this.repo.getContactInfo();
+      if (info) await this.cache.set(cacheKey, info, 600);
+    }
+    return info;
+  }
+
+  async updateContactInfo(data: any) {
+    await this.cache.del('contact:info');
+    return this.repo.upsertContactInfo(data);
+  }
 }
