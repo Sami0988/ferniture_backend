@@ -96,6 +96,10 @@ export class CreateTestimonialDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') { try { return JSON.parse(value); } catch { return undefined; } }
+    return value;
+  })
   translations?: Record<string, Record<string, any>>;
 }
 
@@ -213,6 +217,10 @@ export class CreateFaqDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') { try { return JSON.parse(value); } catch { return undefined; } }
+    return value;
+  })
   translations?: Record<string, Record<string, any>>;
 }
 
@@ -255,6 +263,10 @@ export class CreateBlogPostDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') { try { return JSON.parse(value); } catch { return undefined; } }
+    return value;
+  })
   translations?: Record<string, Record<string, any>>;
 }
 
@@ -308,6 +320,10 @@ export class UpdateContactInfoDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') { try { return JSON.parse(value); } catch { return undefined; } }
+    return value;
+  })
   translations?: Record<string, Record<string, any>>;
 }
 
@@ -360,6 +376,10 @@ export class UpdateAboutPageDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') { try { return JSON.parse(value); } catch { return undefined; } }
+    return value;
+  })
   translations?: Record<string, Record<string, any>>;
 }
 
@@ -414,6 +434,10 @@ export class CreateServiceDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') { try { return JSON.parse(value); } catch { return undefined; } }
+    return value;
+  })
   translations?: Record<string, Record<string, any>>;
 }
 
