@@ -260,6 +260,15 @@ export class CreateBlogPostDto {
   })
   isActive?: boolean;
 
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return value === 'true';
+    return value;
+  })
+  isPublished?: boolean;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsObject()
