@@ -15,6 +15,7 @@ export const testimonials = pgTable(
     imageUrl: text('image_url'),
     isFeatured: boolean('is_featured').notNull().default(false),
     isApproved: boolean('is_approved').notNull().default(false),
+    translations: jsonb('translations').default({}),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -93,6 +94,7 @@ export const faqs = pgTable('faqs', {
   answer: text('answer').notNull(),
   sortOrder: integer('sort_order').default(0),
   isActive: boolean('is_active').notNull().default(true),
+  translations: jsonb('translations').default({}),
 }, (table) => ({
   faqActiveIdx: index('faq_active_idx').on(table.isActive),
   faqSortIdx: index('faq_sort_idx').on(table.sortOrder),
@@ -111,6 +113,7 @@ export const blogPosts = pgTable(
     featureImages: jsonb('feature_images').$type<string[]>().default([]),
     isPublished: boolean('is_published').notNull().default(false),
     publishedAt: timestamp('published_at'),
+    translations: jsonb('translations').default({}),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -132,6 +135,7 @@ export const aboutPage = pgTable('about_page', {
   projectsCompleted: integer('projects_completed').notNull().default(0),
   countriesServed: integer('countries_served').notNull().default(0),
   skilledArtisans: integer('skilled_artisans').notNull().default(0),
+  translations: jsonb('translations').default({}),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
@@ -147,6 +151,7 @@ export const services = pgTable(
     featureImages: jsonb('feature_images').$type<string[]>().default([]),
     sortOrder: integer('sort_order').notNull().default(0),
     isActive: boolean('is_active').notNull().default(true),
+    translations: jsonb('translations').default({}),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -166,6 +171,7 @@ export const beforeAfter = pgTable(
     afterImage: text('after_image').notNull(),
     sortOrder: integer('sort_order').notNull().default(0),
     isActive: boolean('is_active').notNull().default(true),
+    translations: jsonb('translations').default({}),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => ({
@@ -185,6 +191,7 @@ export const contactInfo = pgTable('contact_info', {
   mapUrl: text('map_url'),
   latitude: varchar('latitude', { length: 30 }),
   longitude: varchar('longitude', { length: 30 }),
+  translations: jsonb('translations').default({}),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 

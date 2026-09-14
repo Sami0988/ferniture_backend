@@ -13,6 +13,21 @@ export class WebsiteService {
     private readonly uploadsService: UploadsService,
   ) {}
 
+  private mergeTranslation(item: any, locale?: string): any {
+    if (!locale || locale === 'en') return item;
+    const translation = item.translations?.[locale];
+    if (!translation) return item;
+    return {
+      ...item,
+      ...translation,
+      id: item.id,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      sortOrder: item.sortOrder,
+      isActive: item.isActive,
+    };
+  }
+
   // Products
   async getPublicProducts(division?: string) {
     const cacheKey = `products:${division || 'all'}`;
@@ -277,25 +292,31 @@ export class WebsiteService {
   }
 
   // Testimonials
-  async getPublicTestimonials() {
-    const cacheKey = 'testimonials:all';
+  async getPublicTestimonials(locale?: string) {
+    const cacheKey = `testimonials:all:${locale || 'en'}`;
     let testimonials = await this.cache.get<any[]>(cacheKey);
     if (!testimonials) {
-      testimonials = await this.repo.findPublicTestimonials();
+      const raw = await this.repo.findPublicTestimonials();
+      testimonials = raw.map(t => this.mergeTranslation(t, locale));
       await this.cache.set(cacheKey, testimonials, 300);
     }
     return testimonials;
   }
 
-  async getTestimonialsPaginated(pagination: PaginationDto, approvedOnly: boolean = false) {
-    return this.repo.findTestimonialsPaginated(pagination, approvedOnly);
+  async getTestimonialsPaginated(pagination: PaginationDto, approvedOnly: boolean = false, locale?: string) {
+    const result = await this.repo.findTestimonialsPaginated(pagination, approvedOnly);
+    if (result.data) {
+      result.data = result.data.map(t => this.mergeTranslation(t, locale));
+    }
+    return result;
   }
 
-  async getFeaturedTestimonials() {
-    const cacheKey = 'testimonials:featured';
+  async getFeaturedTestimonials(locale?: string) {
+    const cacheKey = `testimonials:featured:${locale || 'en'}`;
     let testimonials = await this.cache.get<any[]>(cacheKey);
     if (!testimonials) {
-      testimonials = await this.repo.findFeaturedTestimonials();
+      const raw = await this.repo.findFeaturedTestimonials();
+      testimonials = raw.map(t => this.mergeTranslation(t, locale));
       await this.cache.set(cacheKey, testimonials, 300);
     }
     return testimonials;
@@ -351,12 +372,13 @@ export class WebsiteService {
   }
 
   // FAQs
-  async getPublicFaqs() {
-    const cacheKey = 'faqs:all';
+  async getPublicFaqs(locale?: string) {
+    const cacheKey = `faqs:all:${locale || 'en'}`;
     let faqs = await this.cache.get<any[]>(cacheKey);
     if (!faqs) {
-      faqs = await this.repo.findPublicFaqs();
-      await this.cache.set(cacheKey, faqs, 600); // 10 min — FAQs rarely change
+      const raw = await this.repo.findPublicFaqs();
+      faqs = raw.map(f => this.mergeTranslation(f, locale));
+      await this.cache.set(cacheKey, faqs, 600);
     }
     return faqs;
   }
@@ -385,20 +407,21 @@ export class WebsiteService {
   }
 
   // Blog Posts
-  async getPublicBlogPosts(category?: string) {
-    const cacheKey = `blog:${category || 'all'}`;
+  async getPublicBlogPosts(category?: string, locale?: string) {
+    const cacheKey = `blog:${category || 'all'}:${locale || 'en'}`;
     let posts = await this.cache.get<any[]>(cacheKey);
     if (!posts) {
-      posts = await this.repo.findPublishedBlogPosts(category);
+      const raw = await this.repo.findPublishedBlogPosts(category);
+      posts = raw.map(p => this.mergeTranslation(p, locale));
       await this.cache.set(cacheKey, posts, 300);
     }
     return posts;
   }
 
-  async getBlogPostBySlug(slug: string) {
+  async getBlogPostBySlug(slug: string, locale?: string) {
     const post = await this.repo.findBlogPostBySlug(slug);
     if (!post) throw new NotFoundException('Blog post not found');
-    return post;
+    return this.mergeTranslation(post, locale);
   }
 
   async getBlogPostById(id: string) {
@@ -472,12 +495,15 @@ export class WebsiteService {
   }
 
   // About Page
-  async getAboutPage() {
-    const cacheKey = 'about:page';
+  async getAboutPage(locale?: string) {
+    const cacheKey = `about:page:${locale || 'en'}`;
     let about = await this.cache.get<any>(cacheKey);
     if (!about) {
-      about = await this.repo.getAboutPage();
-      if (about) await this.cache.set(cacheKey, about, 600);
+      const raw = await this.repo.getAboutPage();
+      if (raw) {
+        about = this.mergeTranslation(raw, locale);
+        await this.cache.set(cacheKey, about, 600);
+      }
     }
     return about;
   }
@@ -492,11 +518,12 @@ export class WebsiteService {
   }
 
   // Services
-  async getPublicServices() {
-    const cacheKey = 'services:all';
+  async getPublicServices(locale?: string) {
+    const cacheKey = `services:all:${locale || 'en'}`;
     let items = await this.cache.get<any[]>(cacheKey);
     if (!items) {
-      items = await this.repo.findPublicServices();
+      const raw = await this.repo.findPublicServices();
+      items = raw.map(s => this.mergeTranslation(s, locale));
       await this.cache.set(cacheKey, items, 300);
     }
     return items;
@@ -548,11 +575,12 @@ export class WebsiteService {
   }
 
   // Before & After
-  async getPublicBeforeAfter() {
-    const cacheKey = 'beforeAfter:all';
+  async getPublicBeforeAfter(locale?: string) {
+    const cacheKey = `beforeAfter:all:${locale || 'en'}`;
     let items = await this.cache.get<any[]>(cacheKey);
     if (!items) {
-      items = await this.repo.findPublicBeforeAfter();
+      const raw = await this.repo.findPublicBeforeAfter();
+      items = raw.map(b => this.mergeTranslation(b, locale));
       await this.cache.set(cacheKey, items, 300);
     }
     return items;
@@ -602,12 +630,15 @@ export class WebsiteService {
   }
 
   // Contact Info
-  async getContactInfo() {
-    const cacheKey = 'contact:info';
+  async getContactInfo(locale?: string) {
+    const cacheKey = `contact:info:${locale || 'en'}`;
     let info = await this.cache.get<any>(cacheKey);
     if (!info) {
-      info = await this.repo.getContactInfo();
-      if (info) await this.cache.set(cacheKey, info, 600);
+      const raw = await this.repo.getContactInfo();
+      if (raw) {
+        info = this.mergeTranslation(raw, locale);
+        await this.cache.set(cacheKey, info, 600);
+      }
     }
     return info;
   }

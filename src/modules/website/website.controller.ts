@@ -111,15 +111,15 @@ export class PublicTestimonialsController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List approved testimonials' })
-  findAll(@Query() pagination: PaginationDto) {
-    return this.websiteService.getTestimonialsPaginated(pagination, true);
+  findAll(@Query() pagination: PaginationDto, @Query('locale') locale?: string) {
+    return this.websiteService.getTestimonialsPaginated(pagination, true, locale);
   }
 
   @Get('featured')
   @Public()
   @ApiOperation({ summary: 'Featured testimonials' })
-  findFeatured() {
-    return this.websiteService.getFeaturedTestimonials();
+  findFeatured(@Query('locale') locale?: string) {
+    return this.websiteService.getFeaturedTestimonials(locale);
   }
 
   @Post()
@@ -164,8 +164,8 @@ export class PublicFaqsController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List FAQs' })
-  findAll(@Query() pagination: PaginationDto) {
-    return this.websiteService.getPublicFaqs();
+  findAll(@Query() pagination: PaginationDto, @Query('locale') locale?: string) {
+    return this.websiteService.getPublicFaqs(locale);
   }
 }
 
@@ -432,15 +432,15 @@ export class PublicBlogController {
   @Public()
   @ApiOperation({ summary: 'List published blog posts' })
   @ApiQuery({ name: 'category', required: false })
-  findAll(@Query('category') category?: string) {
-    return this.websiteService.getPublicBlogPosts(category);
+  findAll(@Query('category') category?: string, @Query('locale') locale?: string) {
+    return this.websiteService.getPublicBlogPosts(category, locale);
   }
 
   @Get(':slug')
   @Public()
   @ApiOperation({ summary: 'Get blog post by slug' })
-  findBySlug(@Param('slug') slug: string) {
-    return this.websiteService.getBlogPostBySlug(slug);
+  findBySlug(@Param('slug') slug: string, @Query('locale') locale?: string) {
+    return this.websiteService.getBlogPostBySlug(slug, locale);
   }
 }
 
@@ -561,8 +561,8 @@ export class PublicAboutController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Get about page content' })
-  getAboutPage() {
-    return this.websiteService.getAboutPage();
+  getAboutPage(@Query('locale') locale?: string) {
+    return this.websiteService.getAboutPage(locale);
   }
 }
 
@@ -620,8 +620,8 @@ export class PublicServicesController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List active services' })
-  findAll() {
-    return this.websiteService.getPublicServices();
+  findAll(@Query('locale') locale?: string) {
+    return this.websiteService.getPublicServices(locale);
   }
 }
 
@@ -742,8 +742,8 @@ export class PublicBeforeAfterController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'List active before & after pairs' })
-  findAll() {
-    return this.websiteService.getPublicBeforeAfter();
+  findAll(@Query('locale') locale?: string) {
+    return this.websiteService.getPublicBeforeAfter(locale);
   }
 }
 
@@ -854,8 +854,8 @@ export class PublicContactInfoController {
   @Get()
   @Public()
   @ApiOperation({ summary: 'Get contact info (address, phones, hours, map)' })
-  getContactInfo() {
-    return this.websiteService.getContactInfo();
+  getContactInfo(@Query('locale') locale?: string) {
+    return this.websiteService.getContactInfo(locale);
   }
 }
 

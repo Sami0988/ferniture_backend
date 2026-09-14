@@ -62,7 +62,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Global validation for class-validator DTOs (Zod endpoints use their own pipe)
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   // Swagger — only in non-production
   if (process.env.NODE_ENV !== 'production') {

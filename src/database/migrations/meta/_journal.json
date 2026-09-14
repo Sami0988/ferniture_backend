@@ -78,6 +78,20 @@
       "when": 1783400000000,
       "tag": "0010_add_proformas",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1783401000000,
+      "tag": "0011_add_proforma_number_sequence",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1783402000000,
+      "tag": "0012_add_translations",
+      "breakpoints": true
     }
   ]
 }

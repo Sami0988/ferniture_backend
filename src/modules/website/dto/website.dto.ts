@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsEnum, IsBoolean, MaxLength, IsArray, Min, Max } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsNumber, IsEnum, IsBoolean, MaxLength, IsArray, IsObject, Min, Max } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateContactMessageDto {
@@ -72,6 +72,10 @@ export class CreateTestimonialDto {
   @IsNumber()
   @Min(0.5)
   @Max(5)
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return Number(value);
+    return value;
+  })
   rating: number;
 
   @ApiProperty({ example: 'We handed Kassahun\'s team the keys to our entire ground floor...' })
@@ -88,6 +92,11 @@ export class CreateTestimonialDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, Record<string, any>>;
 }
 
 export class CreateProductDto {
@@ -186,12 +195,25 @@ export class CreateFaqDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return Number(value);
+    return value;
+  })
   sortOrder?: number;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return value === 'true';
+    return value;
+  })
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, Record<string, any>>;
 }
 
 export class CreateBlogPostDto {
@@ -224,7 +246,16 @@ export class CreateBlogPostDto {
   @ApiPropertyOptional({ default: false })
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return value === 'true';
+    return value;
+  })
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, Record<string, any>>;
 }
 
 export class UpdateContactInfoDto {
@@ -273,6 +304,11 @@ export class UpdateContactInfoDto {
   @IsOptional()
   @IsString()
   longitude?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, Record<string, any>>;
 }
 
 export class UpdateAboutPageDto {
@@ -320,6 +356,11 @@ export class UpdateAboutPageDto {
   @IsOptional()
   @IsString()
   imageUrl?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, Record<string, any>>;
 }
 
 export class CreateServiceDto {
@@ -344,17 +385,36 @@ export class CreateServiceDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try { return JSON.parse(value); } catch { return [value]; }
+    }
+    return value;
+  })
   bulletPoints?: string[];
 
   @ApiPropertyOptional({ default: 0 })
   @IsOptional()
   @IsNumber()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return Number(value);
+    return value;
+  })
   sortOrder?: number;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return value === 'true';
+    return value;
+  })
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, Record<string, any>>;
 }
 
 export class CreateBeforeAfterDto {
@@ -367,10 +427,23 @@ export class CreateBeforeAfterDto {
   @ApiPropertyOptional({ default: 0 })
   @IsOptional()
   @IsNumber()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return Number(value);
+    return value;
+  })
   sortOrder?: number;
 
   @ApiPropertyOptional({ default: true })
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return value === 'true';
+    return value;
+  })
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, Record<string, any>>;
 }
