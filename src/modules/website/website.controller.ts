@@ -336,6 +336,13 @@ export class AdminTestimonialsController {
     return this.websiteService.toggleTestimonialFeatured(id);
   }
 
+  @Patch(':id')
+  @Roles('super_admin', 'manager')
+  @ApiOperation({ summary: 'Update a testimonial' })
+  update(@Param('id') id: string, @Body() dto: Partial<CreateTestimonialDto>) {
+    return this.websiteService.updateTestimonial(id, dto);
+  }
+
   @Delete(':id')
   @Roles('super_admin')
   @ApiOperation({ summary: 'Delete a testimonial' })

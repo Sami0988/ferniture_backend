@@ -370,6 +370,13 @@ export class WebsiteService {
     await this.repo.deleteTestimonial(id);
   }
 
+  async updateTestimonial(id: string, data: any) {
+    this.normalizeJsonFields(data, ['translations']);
+    await this.cache.del('testimonials:all');
+    await this.cache.del('testimonials:featured');
+    return this.repo.updateTestimonial(id, data);
+  }
+
   async toggleTestimonialFeatured(id: string) {
     await this.cache.del('testimonials:all');
     await this.cache.del('testimonials:featured');

@@ -315,6 +315,16 @@ export class WebsiteRepository {
     await this.db.delete(testimonials).where(eq(testimonials.id, id));
   }
 
+  async updateTestimonial(id: string, data: any) {
+    const [updated] = await this.db
+      .update(testimonials)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(testimonials.id, id))
+      .returning();
+    if (!updated) throw new NotFoundException('Testimonial not found');
+    return updated;
+  }
+
   async toggleTestimonialFeatured(id: string) {
     const [existing] = await this.db.select().from(testimonials).where(eq(testimonials.id, id));
     if (!existing) throw new NotFoundException('Testimonial not found');
