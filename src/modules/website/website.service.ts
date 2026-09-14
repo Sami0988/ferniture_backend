@@ -13,6 +13,15 @@ export class WebsiteService {
     private readonly uploadsService: UploadsService,
   ) {}
 
+  private normalizeBooleans(data: any, fields: string[]): any {
+    for (const field of fields) {
+      if (data[field] !== undefined && typeof data[field] === 'string') {
+        data[field] = data[field] === 'true';
+      }
+    }
+    return data;
+  }
+
   private mergeTranslation(item: any, locale?: string): any {
     if (!locale || locale === 'en') return item;
     const translation = item.translations?.[locale];
@@ -392,11 +401,13 @@ export class WebsiteService {
   }
 
   async createFaq(data: any) {
+    this.normalizeBooleans(data, ['isActive']);
     await this.cache.del('faqs:all');
     return this.repo.createFaq(data);
   }
 
   async updateFaq(id: string, data: any) {
+    this.normalizeBooleans(data, ['isActive']);
     await this.cache.del('faqs:all');
     return this.repo.updateFaq(id, data);
   }
@@ -445,6 +456,8 @@ export class WebsiteService {
       data.featureImages = results.map(r => r.url);
     }
 
+    this.normalizeBooleans(data, ['isPublished', 'isActive']);
+
     if (!data.slug) {
       data.slug = data.title
         .toLowerCase()
@@ -462,6 +475,8 @@ export class WebsiteService {
 
   async updateBlogPost(id: string, data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
     await this.getBlogPostById(id);
+
+    this.normalizeBooleans(data, ['isPublished', 'isActive']);
 
     if (files?.mainImage) {
       const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/blog');
@@ -540,6 +555,7 @@ export class WebsiteService {
   }
 
   async createService(data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
+    this.normalizeBooleans(data, ['isActive']);
     if (files?.mainImage) {
       const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
       data.coverImage = url;
@@ -555,6 +571,7 @@ export class WebsiteService {
 
   async updateService(id: string, data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
     await this.getServiceById(id);
+    this.normalizeBooleans(data, ['isActive']);
     if (files?.mainImage) {
       const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
       data.coverImage = url;
@@ -597,6 +614,7 @@ export class WebsiteService {
   }
 
   async createBeforeAfter(data: any, files?: { beforeImage?: Express.Multer.File; afterImage?: Express.Multer.File }) {
+    this.normalizeBooleans(data, ['isActive']);
     if (files?.beforeImage) {
       const { url } = await this.uploadsService.uploadImage(files.beforeImage, 'kassahun/before-after');
       data.beforeImage = url;
@@ -611,6 +629,7 @@ export class WebsiteService {
 
   async updateBeforeAfter(id: string, data: any, files?: { beforeImage?: Express.Multer.File; afterImage?: Express.Multer.File }) {
     await this.getBeforeAfterById(id);
+    this.normalizeBooleans(data, ['isActive']);
     if (files?.beforeImage) {
       const { url } = await this.uploadsService.uploadImage(files.beforeImage, 'kassahun/before-after');
       data.beforeImage = url;
