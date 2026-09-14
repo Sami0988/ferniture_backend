@@ -22,6 +22,28 @@ export class WebsiteService {
     return data;
   }
 
+  private normalizeJsonFields(data: any, fields: string[]): any {
+    for (const field of fields) {
+      if (data[field] !== undefined && typeof data[field] === 'string') {
+        try { data[field] = JSON.parse(data[field]); } catch {}
+      }
+    }
+    return data;
+  }
+
+  private normalizeAfterFetch(item: any): any {
+    if (item.bulletPoints && typeof item.bulletPoints === 'string') {
+      try { item.bulletPoints = JSON.parse(item.bulletPoints); } catch { item.bulletPoints = []; }
+    }
+    if (item.featureImages && typeof item.featureImages === 'string') {
+      try { item.featureImages = JSON.parse(item.featureImages); } catch { item.featureImages = []; }
+    }
+    if (item.translations && typeof item.translations === 'string') {
+      try { item.translations = JSON.parse(item.translations); } catch { item.translations = {}; }
+    }
+    return item;
+  }
+
   private mergeTranslation(item: any, locale?: string): any {
     if (!locale || locale === 'en') return item;
     const translation = item.translations?.[locale];
@@ -306,7 +328,7 @@ export class WebsiteService {
     let testimonials = await this.cache.get<any[]>(cacheKey);
     if (!testimonials) {
       const raw = await this.repo.findPublicTestimonials();
-      testimonials = raw.map(t => this.mergeTranslation(t, locale));
+      testimonials = raw.map(t => this.normalizeAfterFetch(this.mergeTranslation(t, locale)));
       await this.cache.set(cacheKey, testimonials, 300);
     }
     return testimonials;
@@ -315,7 +337,7 @@ export class WebsiteService {
   async getTestimonialsPaginated(pagination: PaginationDto, approvedOnly: boolean = false, locale?: string) {
     const result = await this.repo.findTestimonialsPaginated(pagination, approvedOnly);
     if (result.data) {
-      result.data = result.data.map(t => this.mergeTranslation(t, locale));
+      result.data = result.data.map(t => this.normalizeAfterFetch(this.mergeTranslation(t, locale)));
     }
     return result;
   }
@@ -325,7 +347,7 @@ export class WebsiteService {
     let testimonials = await this.cache.get<any[]>(cacheKey);
     if (!testimonials) {
       const raw = await this.repo.findFeaturedTestimonials();
-      testimonials = raw.map(t => this.mergeTranslation(t, locale));
+      testimonials = raw.map(t => this.normalizeAfterFetch(this.mergeTranslation(t, locale)));
       await this.cache.set(cacheKey, testimonials, 300);
     }
     return testimonials;
@@ -386,7 +408,7 @@ export class WebsiteService {
     let faqs = await this.cache.get<any[]>(cacheKey);
     if (!faqs) {
       const raw = await this.repo.findPublicFaqs();
-      faqs = raw.map(f => this.mergeTranslation(f, locale));
+      faqs = raw.map(f => this.normalizeAfterFetch(this.mergeTranslation(f, locale)));
       await this.cache.set(cacheKey, faqs, 600);
     }
     return faqs;
@@ -423,7 +445,7 @@ export class WebsiteService {
     let posts = await this.cache.get<any[]>(cacheKey);
     if (!posts) {
       const raw = await this.repo.findPublishedBlogPosts(category);
-      posts = raw.map(p => this.mergeTranslation(p, locale));
+      posts = raw.map(p => this.normalizeAfterFetch(this.mergeTranslation(p, locale)));
       await this.cache.set(cacheKey, posts, 300);
     }
     return posts;
@@ -432,7 +454,7 @@ export class WebsiteService {
   async getBlogPostBySlug(slug: string, locale?: string) {
     const post = await this.repo.findBlogPostBySlug(slug);
     if (!post) throw new NotFoundException('Blog post not found');
-    return this.mergeTranslation(post, locale);
+    return this.normalizeAfterFetch(this.mergeTranslation(post, locale));
   }
 
   async getBlogPostById(id: string) {
@@ -516,7 +538,7 @@ export class WebsiteService {
     if (!about) {
       const raw = await this.repo.getAboutPage();
       if (raw) {
-        about = this.mergeTranslation(raw, locale);
+        about = this.normalizeAfterFetch(this.mergeTranslation(raw, locale));
         await this.cache.set(cacheKey, about, 600);
       }
     }
@@ -538,7 +560,7 @@ export class WebsiteService {
     let items = await this.cache.get<any[]>(cacheKey);
     if (!items) {
       const raw = await this.repo.findPublicServices();
-      items = raw.map(s => this.mergeTranslation(s, locale));
+      items = raw.map(s => this.normalizeAfterFetch(this.mergeTranslation(s, locale)));
       await this.cache.set(cacheKey, items, 300);
     }
     return items;
@@ -556,6 +578,7 @@ export class WebsiteService {
 
   async createService(data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
     this.normalizeBooleans(data, ['isActive']);
+    this.normalizeJsonFields(data, ['bulletPoints', 'translations']);
     if (files?.mainImage) {
       const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
       data.coverImage = url;
@@ -572,6 +595,7 @@ export class WebsiteService {
   async updateService(id: string, data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
     await this.getServiceById(id);
     this.normalizeBooleans(data, ['isActive']);
+    this.normalizeJsonFields(data, ['bulletPoints', 'translations']);
     if (files?.mainImage) {
       const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
       data.coverImage = url;
@@ -597,7 +621,7 @@ export class WebsiteService {
     let items = await this.cache.get<any[]>(cacheKey);
     if (!items) {
       const raw = await this.repo.findPublicBeforeAfter();
-      items = raw.map(b => this.mergeTranslation(b, locale));
+      items = raw.map(b => this.normalizeAfterFetch(this.mergeTranslation(b, locale)));
       await this.cache.set(cacheKey, items, 300);
     }
     return items;
@@ -655,7 +679,7 @@ export class WebsiteService {
     if (!info) {
       const raw = await this.repo.getContactInfo();
       if (raw) {
-        info = this.mergeTranslation(raw, locale);
+        info = this.normalizeAfterFetch(this.mergeTranslation(raw, locale));
         await this.cache.set(cacheKey, info, 600);
       }
     }
