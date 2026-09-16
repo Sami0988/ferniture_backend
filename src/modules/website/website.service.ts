@@ -579,6 +579,18 @@ export class WebsiteService {
     return service;
   }
 
+  async getServiceBySlug(slug: string, locale?: string) {
+    const cacheKey = `service:slug:${slug}:${locale || 'en'}`;
+    let service = await this.cache.get<any>(cacheKey);
+    if (!service) {
+      const raw = await this.repo.findServiceBySlug(slug);
+      if (!raw) throw new NotFoundException('Service not found');
+      service = this.normalizeAfterFetch(this.mergeTranslation(raw, locale));
+      await this.cache.set(cacheKey, service, 300);
+    }
+    return service;
+  }
+
   async getAllServicesPaginated(pagination: PaginationDto, filters?: { category?: string; search?: string }) {
     return this.repo.findAllServicesPaginated(pagination, filters);
   }
@@ -586,6 +598,9 @@ export class WebsiteService {
   async createService(data: any, files?: { mainImage?: Express.Multer.File; featureImages?: Express.Multer.File[] }) {
     this.normalizeBooleans(data, ['isActive']);
     this.normalizeJsonFields(data, ['bulletPoints', 'translations']);
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
     if (files?.mainImage) {
       const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
       data.coverImage = url;
@@ -603,6 +618,9 @@ export class WebsiteService {
     await this.getServiceById(id);
     this.normalizeBooleans(data, ['isActive']);
     this.normalizeJsonFields(data, ['bulletPoints', 'translations']);
+    if (!data.slug && data.title) {
+      data.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
     if (files?.mainImage) {
       const { url } = await this.uploadsService.uploadImage(files.mainImage, 'kassahun/services');
       data.coverImage = url;

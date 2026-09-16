@@ -563,6 +563,14 @@ export class WebsiteRepository {
     return service || null;
   }
 
+  async findServiceBySlug(slug: string): Promise<any> {
+    const [service] = await this.db
+      .select()
+      .from(services)
+      .where(eq(services.slug, slug));
+    return service || null;
+  }
+
   async findAllServicesPaginated(pagination: PaginationDto, filters?: { category?: string; search?: string }): Promise<PaginatedResult<any>> {
     const page = Math.max(1, Number(pagination.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(pagination.limit) || 20));

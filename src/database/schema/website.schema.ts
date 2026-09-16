@@ -145,6 +145,7 @@ export const services = pgTable(
   {
     id: uuid('id').defaultRandom().primaryKey(),
     title: varchar('title', { length: 200 }).notNull(),
+    slug: varchar('slug', { length: 220 }).unique(),
     category: varchar('category', { length: 50 }).notNull(),
     description: text('description').notNull(),
     bulletPoints: jsonb('bullet_points').$type<string[]>().default([]),
@@ -160,6 +161,7 @@ export const services = pgTable(
     serviceActiveIdx: index('service_active_idx').on(table.isActive),
     serviceSortIdx: index('service_sort_idx').on(table.sortOrder),
     serviceCategoryIdx: index('service_category_idx').on(table.category),
+    serviceSlugIdx: index('service_slug_idx').on(table.slug),
   }),
 );
 

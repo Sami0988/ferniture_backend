@@ -630,6 +630,13 @@ export class PublicServicesController {
   findAll(@Query('locale') locale?: string) {
     return this.websiteService.getPublicServices(locale);
   }
+
+  @Get(':slug')
+  @Public()
+  @ApiOperation({ summary: 'Get service by slug' })
+  findBySlug(@Param('slug') slug: string, @Query('locale') locale?: string) {
+    return this.websiteService.getServiceBySlug(slug, locale);
+  }
 }
 
 // ==================== ADMIN SERVICES ====================
