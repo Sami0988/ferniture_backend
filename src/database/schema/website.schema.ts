@@ -71,6 +71,7 @@ export const contactMessages = pgTable('contact_messages', {
   name: varchar('name', { length: 150 }).notNull(),
   email: varchar('email', { length: 150 }),
   phone: varchar('phone', { length: 20 }),
+  subject: varchar('subject', { length: 250 }),
   message: text('message').notNull(),
   status: contactStatusEnum('status').notNull().default('new'),
   createdAt: timestamp('created_at').defaultNow().notNull(),

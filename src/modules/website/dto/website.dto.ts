@@ -18,6 +18,12 @@ export class CreateContactMessageDto {
   @IsString()
   phone?: string;
 
+  @ApiPropertyOptional({ example: 'Inquiry about custom furniture' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  subject?: string;
+
   @ApiProperty({ example: 'I need a custom kitchen cabinet' })
   @IsString()
   @IsNotEmpty()
