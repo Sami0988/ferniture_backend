@@ -59,6 +59,7 @@ export class ProjectsRepository {
         deliveryDate: projects.deliveryDate,
         completedAt: projects.completedAt,
         deliveredAt: projects.deliveredAt,
+        paidAt: projects.paidAt,
         branchName: projects.branchName,
         city: projects.city,
         customerName: customers.fullName,
@@ -95,6 +96,7 @@ export class ProjectsRepository {
         deliveryDate: projects.deliveryDate,
         completedAt: projects.completedAt,
         deliveredAt: projects.deliveredAt,
+        paidAt: projects.paidAt,
         branchName: projects.branchName,
         city: projects.city,
         customerId: projects.customerId,
@@ -179,7 +181,7 @@ export class ProjectsRepository {
     });
   }
 
-  async updateStatus(id: string, newStatus: string, changedBy: string, notes?: string) {
+  async updateStatus(id: string, newStatus: string, changedBy: string, notes?: string, paidAt?: string | Date) {
     return this.db.transaction(async (tx: any) => {
       const [current] = await tx.select().from(projects).where(eq(projects.id, id));
       if (!current) throw new NotFoundException('Project not found');
@@ -189,7 +191,7 @@ export class ProjectsRepository {
       if (newStatus === 'delivered') updateData.deliveredAt = new Date();
       if (newStatus === 'paid') {
         updateData.paidNowPrice = current.totalPrice;
-        updateData.paidAt = new Date();
+        updateData.paidAt = paidAt ? new Date(paidAt) : new Date();
       }
 
       await tx.update(projects).set(updateData).where(eq(projects.id, id));

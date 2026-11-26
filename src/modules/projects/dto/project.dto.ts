@@ -179,6 +179,14 @@ export class UpdateProjectStatusDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: 'Date the payment was received. Required when status is "paid".',
+    example: '2026-11-26',
+  })
+  @IsOptional()
+  @IsDateString()
+  paidAt?: string;
 }
 
 export class CreateProjectAttachmentDto {
@@ -220,4 +228,12 @@ export class PayProjectDto {
   @IsOptional()
   @IsString()
   note?: string;
+
+  @ApiPropertyOptional({
+    description: 'Date the payment was received. Required when this payment settles the project.',
+    example: '2026-11-26',
+  })
+  @IsOptional()
+  @IsDateString()
+  paidAt?: string;
 }

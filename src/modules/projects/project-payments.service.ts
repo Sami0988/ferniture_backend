@@ -42,7 +42,11 @@ export class ProjectPaymentsService {
     };
   }
 
-  async addPayment(projectId: string, data: { amount: number; method: string; note?: string }, recordedBy: string) {
+  async addPayment(
+    projectId: string,
+    data: { amount: number; method: string; note?: string; paidAt?: string },
+    recordedBy: string,
+  ) {
     if (data.amount <= 0) {
       throw new BadRequestException('Payment amount must be greater than 0');
     }
@@ -80,6 +84,7 @@ export class ProjectPaymentsService {
 
     // Auto-update status to 'paid' if fully settled
     let newStatus = project.status;
+    const paymentDate = data.paidAt ? new Date(data.paidAt) : new Date();
     const updateData: any = {
       paidNowPrice: newTotalPaid,
       updatedAt: new Date(),
@@ -88,7 +93,7 @@ export class ProjectPaymentsService {
     if (newRemaining <= 0 && project.status !== 'paid') {
       newStatus = 'paid';
       updateData.status = 'paid';
-      updateData.paidAt = new Date();
+      updateData.paidAt = paymentDate;
     }
 
     await this.db
@@ -113,7 +118,7 @@ export class ProjectPaymentsService {
         invoiceId: invoice.id,
         amount: data.amount,
         method: data.method as any,
-        paidAt: new Date(),
+        paidAt: paymentDate,
         verifiedBy: recordedBy,
       });
 

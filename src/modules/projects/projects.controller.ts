@@ -173,12 +173,15 @@ export class ProjectsController {
   @Patch(':id/status')
   @Roles('super_admin', 'manager')
   @ApiOperation({ summary: 'Update project status (validated transitions)' })
+  @ApiQuery({ name: 'calendar', required: false, enum: ['gc', 'ec'] })
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateProjectStatusDto,
     @CurrentUser('id') userId: string,
+    @Query('calendar') calendar?: 'gc' | 'ec',
   ) {
-    return this.statusService.transitionStatus(id, dto.status, userId, dto.notes);
+    const converted = convertInputDates(dto as any, calendar, ['paidAt']);
+    return this.statusService.transitionStatus(id, converted.status, userId, converted.notes, converted.paidAt);
   }
 
   @Get(':id/attachments')

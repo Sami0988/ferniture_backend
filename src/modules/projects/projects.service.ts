@@ -93,9 +93,9 @@ export class ProjectsService {
     return this.repo.update(id, data, assigneeIds);
   }
 
-  async updateStatus(id: string, newStatus: string, changedBy: string, notes?: string) {
+  async updateStatus(id: string, newStatus: string, changedBy: string, notes?: string, paidAt?: string) {
     await this.findById(id);
-    return this.repo.updateStatus(id, newStatus, changedBy, notes);
+    return this.repo.updateStatus(id, newStatus, changedBy, notes, paidAt);
   }
 
   async getAssignees(id: string) {

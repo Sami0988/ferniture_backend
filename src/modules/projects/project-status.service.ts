@@ -39,6 +39,7 @@ export class ProjectStatusService {
     newStatus: string,
     changedBy: string,
     notes?: string,
+    paidAt?: string,
   ) {
     const project = await this.repo.findById(projectId);
     if (!project) {
@@ -47,7 +48,11 @@ export class ProjectStatusService {
 
     this.validateTransition(project.status, newStatus);
 
-    const updatedProject = await this.repo.updateStatus(projectId, newStatus, changedBy, notes);
+    if (newStatus === 'paid' && !paidAt) {
+      throw new BadRequestException('Paid date (paidAt) is required when marking a project as paid');
+    }
+
+    const updatedProject = await this.repo.updateStatus(projectId, newStatus, changedBy, notes, paidAt);
 
     // Get assignee user IDs for notifications
     const assignees = await this.repo.getAssignees(projectId);
