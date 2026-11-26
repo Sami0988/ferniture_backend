@@ -386,3 +386,17 @@ export function convertInputDates<T extends Record<string, any>>(
 
   return result;
 }
+
+/**
+ * Today's date (YYYY-MM-DD) in Ethiopia, independent of the server timezone.
+ * Use this for "paid today" style defaults: new Date() on a UTC server is still
+ * on the previous day between 00:00 and 03:00 Ethiopian time.
+ */
+export function todayInEthiopia(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Addis_Ababa',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}

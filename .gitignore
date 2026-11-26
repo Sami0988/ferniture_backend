@@ -4,3 +4,4 @@ dist/
 cov/
 coverage/
 *.log
+*.tsbuildinfo

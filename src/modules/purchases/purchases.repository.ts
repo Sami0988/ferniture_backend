@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql, and, gte, lte } from 'drizzle-orm';
+import { format } from 'date-fns';
 import { purchases, purchaseItems, suppliers } from '../../database/schema';
 import { PaginationDto, PaginatedResult } from '../../common/dto/pagination.dto';
 
@@ -151,8 +152,9 @@ export class PurchasesRepository {
   }
 
   async aggregateByDateRange(from: Date, to: Date) {
-    const fromDate = from.toISOString().split('T')[0];
-    const toDate = to.toISOString().split('T')[0];
+    // Local-time formatting: toISOString() would shift the date on non-UTC servers.
+    const fromDate = format(from, 'yyyy-MM-dd');
+    const toDate = format(to, 'yyyy-MM-dd');
 
     const [result] = await this.db
       .select({

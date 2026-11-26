@@ -3,6 +3,7 @@ import { Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
 import { eq, desc, sql } from 'drizzle-orm';
 import { projects, projectPayments, invoices, payments } from '../../database/schema';
+import { todayInEthiopia } from '../../common/utils/date-converter.util';
 
 @Injectable()
 export class ProjectPaymentsService {
@@ -93,7 +94,12 @@ export class ProjectPaymentsService {
     if (newRemaining <= 0 && project.status !== 'paid') {
       newStatus = 'paid';
       updateData.status = 'paid';
-      updateData.paidAt = paymentDate;
+      // The tax report groups projects by the calendar day of paidAt. With no
+      // date supplied, use today's date in Ethiopia (stored like a picked date)
+      // so a payment just after midnight is not filed under the previous day.
+      updateData.paidAt = data.paidAt
+        ? paymentDate
+        : new Date(todayInEthiopia());
     }
 
     await this.db

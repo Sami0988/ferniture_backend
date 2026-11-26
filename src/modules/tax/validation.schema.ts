@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import { isValid, parseISO } from 'date-fns';
+
+// A real calendar date in YYYY-MM-DD form (rejects text and dates like 2026-02-31).
+const isoDateString = z
+  .string()
+  .refine((v) => /^\d{4}-\d{2}-\d{2}/.test(v) && isValid(parseISO(v)), {
+    message: 'must be a valid date in YYYY-MM-DD format',
+  });
 
 // --- Suppliers ---
 export const createSupplierSchema = z.object({
@@ -47,13 +55,19 @@ export const taxReportQuerySchema = z
     period: z
       .enum(['day', 'week', 'month', 'quarter', 'year', 'custom'])
       .optional(),
-    referenceDate: z.string().optional(),
-    from: z.string().optional(),
-    to: z.string().optional(),
+    referenceDate: isoDateString.optional(),
+    from: isoDateString.optional(),
+    to: isoDateString.optional(),
     calendar: z.enum(['gc', 'ec', 'ec-fiscal']).optional(),
     fiscalYear: z.coerce.number().int().min(2000).max(3000).optional(),
     fiscalMonth: z.coerce.number().int().min(1).max(12).optional(),
     quarter: z.coerce.number().int().min(1).max(4).optional(),
+    // Breakdown pagination (each list paged independently). When neither
+    // page nor limit is sent for a list, the full list is returned.
+    purchasePage: z.coerce.number().int().min(1).optional(),
+    purchaseLimit: z.coerce.number().int().min(1).max(100).optional(),
+    projectPage: z.coerce.number().int().min(1).optional(),
+    projectLimit: z.coerce.number().int().min(1).max(100).optional(),
   })
   .refine(
     (data) => {
@@ -98,9 +112,9 @@ export const taxReportExportSchema = z
     period: z
       .enum(['day', 'week', 'month', 'quarter', 'year', 'custom'])
       .optional(),
-    referenceDate: z.string().optional(),
-    from: z.string().optional(),
-    to: z.string().optional(),
+    referenceDate: isoDateString.optional(),
+    from: isoDateString.optional(),
+    to: isoDateString.optional(),
     calendar: z.enum(['gc', 'ec', 'ec-fiscal']).optional(),
     fiscalYear: z.coerce.number().int().min(2000).max(3000).optional(),
     fiscalMonth: z.coerce.number().int().min(1).max(12).optional(),

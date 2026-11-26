@@ -32,6 +32,10 @@ export class TaxReportController {
   @ApiQuery({ name: 'fiscalYear', required: false, description: 'Ethiopian fiscal year (e.g. 2018). Only with calendar=ec-fiscal.' })
   @ApiQuery({ name: 'fiscalMonth', required: false, description: 'Fiscal month 1-12. Only with calendar=ec-fiscal & period=month.' })
   @ApiQuery({ name: 'quarter', required: false, description: 'Quarter 1-4. Only with period=quarter.' })
+  @ApiQuery({ name: 'purchasePage', required: false, description: 'Page of the purchases breakdown (1-based). Omit page and limit to get all rows.' })
+  @ApiQuery({ name: 'purchaseLimit', required: false, description: 'Purchases per page (1-100, default 15 when paging).' })
+  @ApiQuery({ name: 'projectPage', required: false, description: 'Page of the work projects breakdown (1-based). Omit page and limit to get all rows.' })
+  @ApiQuery({ name: 'projectLimit', required: false, description: 'Work projects per page (1-100, default 15 when paging).' })
   getReport(@Query() query: TaxReportQueryInput) {
     return this.taxReportService.getTaxReport(query);
   }
@@ -464,6 +468,7 @@ export class TaxReportController {
 
     const projectRows = report.breakdown.workProjects.map((wp: any) => [
       wp.projectName,
+      wp.clientName || '-',
       wp.paidAt,
       Number(wp.priceBeforeVat).toLocaleString(),
       Number(wp.vatAmount).toLocaleString(),
@@ -575,9 +580,9 @@ export class TaxReportController {
         {
           table: {
             headerRows: 1,
-            widths: ['*', 'auto', 'auto', 'auto', 'auto'],
+            widths: ['*', '*', 'auto', 'auto', 'auto', 'auto'],
             body: [
-              ['Project', 'Date', 'Before VAT', 'VAT', 'Total'],
+              ['Project', 'Client', 'Date', 'Before VAT', 'VAT', 'Total'],
               ...projectRows,
             ],
           },

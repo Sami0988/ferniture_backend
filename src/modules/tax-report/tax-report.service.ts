@@ -1,13 +1,59 @@
 import { Injectable, BadRequestException, Logger, Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/drizzle.module';
-import { and, gte, lte, sql, eq } from 'drizzle-orm';
+import { and, gte, lte, sql, eq, desc } from 'drizzle-orm';
 import { projects, purchases, suppliers, customers } from '../../database/schema';
 import { PurchasesRepository } from '../purchases/purchases.repository';
 import { resolveDateRange } from './date-range.util';
+import { format } from 'date-fns';
 import { convertDate, toEC } from '../../common/utils/date-converter.util';
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
+}
+
+const DEFAULT_BREAKDOWN_LIMIT = 15;
+
+interface PageWindow {
+  limit: number;
+  offset: number;
+}
+
+/**
+ * Resolves pagination for one breakdown list. If neither page nor limit was
+ * requested the whole list is returned (used by exports). A page past the end
+ * is clamped to the last page so the client never gets an empty page while
+ * rows exist.
+ */
+function resolvePagination(total: number, page?: number, limit?: number) {
+  if (page === undefined && limit === undefined) {
+    return {
+      window: undefined as PageWindow | undefined,
+      meta: {
+        page: 1,
+        limit: total,
+        total,
+        totalPages: 1,
+        hasNext: false,
+        hasPrevious: false,
+      },
+    };
+  }
+
+  const safeLimit = limit ?? DEFAULT_BREAKDOWN_LIMIT;
+  const totalPages = Math.max(1, Math.ceil(total / safeLimit));
+  const safePage = Math.min(page ?? 1, totalPages);
+
+  return {
+    window: { limit: safeLimit, offset: (safePage - 1) * safeLimit },
+    meta: {
+      page: safePage,
+      limit: safeLimit,
+      total,
+      totalPages,
+      hasNext: safePage < totalPages,
+      hasPrevious: safePage > 1,
+    },
+  };
 }
 
 @Injectable()
@@ -28,6 +74,10 @@ export class TaxReportService {
     fiscalYear?: number;
     fiscalMonth?: number;
     quarter?: number;
+    purchasePage?: number;
+    purchaseLimit?: number;
+    projectPage?: number;
+    projectLimit?: number;
   }) {
     const calendar = query.calendar || 'gc';
     const { from, to, label } = resolveDateRange({
@@ -41,16 +91,33 @@ export class TaxReportService {
       quarter: query.quarter,
     });
 
-    const fromDate = from.toISOString().split('T')[0];
-    const toDate = to.toISOString().split('T')[0];
+    // The range is built in server-local time, so read the calendar date in
+    // local time too. toISOString() shifts to UTC and moves the date by a day
+    // on any server that is not running on UTC.
+    const fromDate = format(from, 'yyyy-MM-dd');
+    const toDate = format(to, 'yyyy-MM-dd');
 
-    const [purchaseAgg, projectAgg, purchaseBreakdown, projectBreakdown] =
-      await Promise.all([
-        this.aggregatePurchases(fromDate, toDate),
-        this.aggregateProjects(fromDate, toDate),
-        this.getPurchaseBreakdown(fromDate, toDate),
-        this.getProjectBreakdown(fromDate, toDate),
-      ]);
+    // Totals always cover the whole period; only the breakdown lists are paged.
+    const [purchaseAgg, projectAgg] = await Promise.all([
+      this.aggregatePurchases(fromDate, toDate),
+      this.aggregateProjects(fromDate, toDate),
+    ]);
+
+    const purchasePaging = resolvePagination(
+      purchaseAgg.count || 0,
+      query.purchasePage,
+      query.purchaseLimit,
+    );
+    const projectPaging = resolvePagination(
+      projectAgg.count || 0,
+      query.projectPage,
+      query.projectLimit,
+    );
+
+    const [purchaseBreakdown, projectBreakdown] = await Promise.all([
+      this.getPurchaseBreakdown(fromDate, toDate, purchasePaging.window),
+      this.getProjectBreakdown(fromDate, toDate, projectPaging.window),
+    ]);
 
     const outputVat = round2(parseFloat(projectAgg.totalVat || '0'));
     const inputVat = round2(parseFloat(purchaseAgg.totalVat || '0'));
@@ -110,6 +177,10 @@ export class TaxReportService {
           paidAt: convertDate(p.paidAt, calendar),
           paidAtGC: p.paidAt,
         })),
+        pagination: {
+          purchases: purchasePaging.meta,
+          workProjects: projectPaging.meta,
+        },
       },
     };
   }
@@ -153,8 +224,12 @@ export class TaxReportService {
     return result;
   }
 
-  private async getPurchaseBreakdown(fromDate: string, toDate: string) {
-    const rows = await this.db
+  private async getPurchaseBreakdown(
+    fromDate: string,
+    toDate: string,
+    window?: PageWindow,
+  ) {
+    const query = this.db
       .select({
         id: purchases.id,
         supplierName: suppliers.companyName,
@@ -172,13 +247,23 @@ export class TaxReportService {
           gte(purchases.purchaseDate, fromDate),
           lte(purchases.purchaseDate, toDate),
         ),
-      );
+      )
+      // Stable order so pages never overlap or skip rows.
+      .orderBy(desc(purchases.purchaseDate), desc(purchases.id));
+
+    const rows = await (window
+      ? query.limit(window.limit).offset(window.offset)
+      : query);
 
     return rows;
   }
 
-  private async getProjectBreakdown(fromDate: string, toDate: string) {
-    const rows = await this.db
+  private async getProjectBreakdown(
+    fromDate: string,
+    toDate: string,
+    window?: PageWindow,
+  ) {
+    const query = this.db
       .select({
         id: projects.id,
         projectName: projects.title,
@@ -197,7 +282,12 @@ export class TaxReportService {
           eq(projects.status, 'paid'),
           gte(projects.paidNowPrice, projects.totalPrice),
         ),
-      );
+      )
+      .orderBy(desc(projects.paidAt), desc(projects.id));
+
+    const rows = await (window
+      ? query.limit(window.limit).offset(window.offset)
+      : query);
 
     return rows;
   }
