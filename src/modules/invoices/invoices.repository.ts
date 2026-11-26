@@ -329,6 +329,8 @@ export class InvoicesRepository {
           method: data.method as any,
           note: `Payment via invoice ${invoice.invoiceNumber}`,
           recordedBy: data.verifiedBy,
+          // Keep the date the user entered for the payment, not today's date
+          createdAt: new Date(data.paidAt),
         });
 
         // Update project's paidNowPrice
@@ -344,7 +346,7 @@ export class InvoicesRepository {
         // Auto-mark project as paid if fully settled
         if (newPaidNow >= Number(project.totalPrice || 0) && project.status !== 'paid') {
           updateData.status = 'paid';
-          updateData.paidAt = new Date();
+          updateData.paidAt = new Date(data.paidAt);
         }
 
         await tx.update(projects).set(updateData).where(eq(projects.id, invoice.projectId));

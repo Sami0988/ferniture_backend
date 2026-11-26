@@ -67,7 +67,11 @@ export class ProjectPaymentsService {
       throw new BadRequestException(`Project is already fully paid. Remaining: 0`);
     }
 
-    // Record the payment
+    const paymentDate = data.paidAt ? new Date(data.paidAt) : new Date();
+
+    // Record the payment. The table has no separate "paid on" column, so the
+    // date the user picked is stored as the payment's date (created_at);
+    // otherwise the history would always show the day it was typed in.
     const [payment] = await this.db
       .insert(projectPayments)
       .values({
@@ -76,6 +80,7 @@ export class ProjectPaymentsService {
         method: data.method as any,
         note: data.note,
         recordedBy,
+        ...(data.paidAt ? { createdAt: paymentDate } : {}),
       })
       .returning();
 
@@ -85,7 +90,6 @@ export class ProjectPaymentsService {
 
     // Auto-update status to 'paid' if fully settled
     let newStatus = project.status;
-    const paymentDate = data.paidAt ? new Date(data.paidAt) : new Date();
     const updateData: any = {
       paidNowPrice: newTotalPaid,
       updatedAt: new Date(),
